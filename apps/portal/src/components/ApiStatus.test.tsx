@@ -11,7 +11,9 @@ describe("ApiStatus", () => {
   it("shows the status returned by the API", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ status: "ok" }) }),
+      vi
+        .fn()
+        .mockResolvedValue({ ok: true, json: async () => ({ status: "ok" }) }),
     );
 
     render(<ApiStatus />);

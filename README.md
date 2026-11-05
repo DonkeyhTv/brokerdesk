@@ -1,29 +1,36 @@
 # BrokerDesk
 
-Mini-SaaS pour courtiers en assurance.
+A mini-SaaS for Belgian insurance brokers: clients, contracts, renewals and claims, with a separate portal for policyholders.
 
-| Application | Rôle | Stack | URL locale |
+> Work in progress, built phase by phase.
+
+| Service | Purpose | Stack | Local URL |
 | --- | --- | --- | --- |
-| `apps/api` | API back-end | Laravel 13, PostgreSQL 17 | http://localhost:8000 |
-| `apps/broker` | Espace courtier | Vue 3, TypeScript, Pinia | http://localhost:5173 |
-| `apps/portal` | Portail client | Next.js, React, TypeScript | http://localhost:3000 |
+| `apps/api` | REST API | Laravel 13, PHP 8.4, PostgreSQL 17 | http://localhost:8000 |
+| `apps/broker` | Broker back office | Vue 3, TypeScript, Pinia | http://localhost:5173 |
+| `apps/portal` | Client portal | Next.js, React, TypeScript | http://localhost:3000 |
+| `mailpit` | Local mail catcher | Mailpit | http://localhost:8025 |
 
-## Démarrage
+## Getting started
 
-Seul Docker est nécessaire :
+Docker is the only requirement:
 
 ```sh
-docker compose up --build
+git clone https://github.com/DonkeyhTv/brokerdesk.git
+cd brokerdesk
+docker compose up
 ```
 
-Le premier lancement installe les dépendances et peut prendre quelques minutes. Les deux front-ends appellent l'API via un proxy sur `/api`, et affichent son état sur leur page d'accueil.
+The first start installs dependencies and can take a few minutes.
 
-## Tests
+## Quality checks
 
 ```sh
-docker compose exec api php artisan test
+docker compose exec php composer format
+docker compose exec php composer analyse
+docker compose exec php composer test
 docker compose exec broker npm test
 docker compose exec portal npm test
 ```
 
-La CI GitHub Actions (`.github/workflows/ci.yml`) lance le lint, les tests et le build des trois applications. Les tests de l'API y tournent sur PostgreSQL.
+GitHub Actions runs linting, static analysis, tests and builds on every push, then boots the full stack with Docker Compose.
