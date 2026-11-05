@@ -3,16 +3,22 @@
 namespace Database\Seeders;
 
 use App\Enums\ContractStatus;
+use App\Models\ActivityLog;
 use App\Models\Brokerage;
 use App\Models\Claim;
 use App\Models\Client;
 use App\Models\Contract;
+use App\Models\Document;
 use App\Models\Insurer;
 use App\Models\User;
 use App\Support\EnterpriseNumber;
 use Database\Factories\Support\BelgianData;
+use Database\Factories\Support\DemoPdf;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
@@ -21,6 +27,8 @@ use RuntimeException;
  */
 class DemoSeeder extends Seeder
 {
+    use WithoutModelEvents;
+
     private const array EXPIRY_WINDOWS = [[3, 30], [31, 60], [61, 90]];
 
     /**
@@ -48,6 +56,7 @@ class DemoSeeder extends Seeder
 
         $this->seedMainBrokerage();
         $this->seedSecondBrokerage();
+        $this->seedActivity();
     }
 
     private function seedMainBrokerage(): void
@@ -111,6 +120,9 @@ class DemoSeeder extends Seeder
         $home = Contract::factory()->create($this->contractAttributes($client, ['type' => 'home']));
         Contract::factory()->create($this->contractAttributes($client, ['type' => 'legal']));
 
+        $this->seedDocuments($motor);
+        $this->seedDocuments($home);
+
         Claim::factory()->create(['contract_id' => $motor->id, 'declared_by' => $account->id]);
         Claim::factory()->settled()->create(['contract_id' => $home->id, 'declared_by' => $account->id]);
     }
@@ -133,6 +145,9 @@ class DemoSeeder extends Seeder
         $business = Contract::factory()->expiringInDays(50)->create($this->contractAttributes($client, ['type' => 'business']));
         $fleet = Contract::factory()->create($this->contractAttributes($client, ['type' => 'motor']));
         Contract::factory()->create($this->contractAttributes($client, ['type' => 'liability']));
+
+        $this->seedDocuments($business);
+        $this->seedDocuments($fleet);
 
         Claim::factory()->create(['contract_id' => $business->id, 'declared_by' => $account->id]);
         Claim::factory()->inReview()->create(['contract_id' => $fleet->id, 'declared_by' => $account->id]);
@@ -167,6 +182,10 @@ class DemoSeeder extends Seeder
             if (fake()->boolean(25)) {
                 $this->seedClaim($contract);
             }
+
+            if (fake()->boolean(30)) {
+                $this->seedDocuments($contract);
+            }
         }
     }
 
@@ -182,6 +201,50 @@ class DemoSeeder extends Seeder
         };
 
         $factory->create(['contract_id' => $contract->id]);
+    }
+
+    /**
+     * One document for the client, and one internal note only staff can read.
+     */
+    private function seedDocuments(Contract $contract): void
+    {
+        foreach (['conditions-particulieres.pdf' => true, 'note-interne.pdf' => false] as $name => $visible) {
+            $pdf = DemoPdf::make("{$contract->policy_number} - {$name}");
+            $path = "documents/{$contract->brokerage_id}/".Str::uuid().'.pdf';
+            Storage::disk('local')->put($path, $pdf);
+
+            Document::factory()->create([
+                'contract_id' => $contract->id,
+                'original_name' => $name,
+                'path' => $path,
+                'size_bytes' => strlen($pdf),
+                'visible_to_client' => $visible,
+            ]);
+        }
+    }
+
+    /**
+     * Model events are off while seeding, so the journal starts with a few entries of its own.
+     */
+    private function seedActivity(): void
+    {
+        $broker = User::query()->where('email', 'broker@example.be')->firstOrFail();
+
+        $contracts = Contract::query()->where('brokerage_id', $broker->brokerage_id)->latest('id')->limit(12)->get();
+
+        foreach ($contracts as $index => $contract) {
+            $log = new ActivityLog;
+            $log->forceFill([
+                'brokerage_id' => $contract->brokerage_id,
+                'user_id' => $broker->id,
+                'action' => $index % 3 === 0 ? 'updated' : 'created',
+                'subject_type' => $contract->getMorphClass(),
+                'subject_id' => $contract->id,
+                'subject_label' => $contract->policy_number,
+                'changes' => $index % 3 === 0 ? ['annual_premium_cents' => ['old' => $contract->annual_premium_cents - 2500, 'new' => $contract->annual_premium_cents]] : null,
+                'created_at' => now()->subHours($index * 5 + 1),
+            ])->save();
+        }
     }
 
     /**

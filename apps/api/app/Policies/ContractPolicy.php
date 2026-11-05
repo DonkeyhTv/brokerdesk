@@ -21,6 +21,11 @@ class ContractPolicy
         return $this->conceal($user->canSee($contract->client));
     }
 
+    public function export(User $user): bool
+    {
+        return $user->isStaff();
+    }
+
     public function create(User $user): bool
     {
         return $user->isStaff();
