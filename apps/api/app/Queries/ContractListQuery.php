@@ -3,6 +3,7 @@
 namespace App\Queries;
 
 use App\Enums\ContractStatus;
+use App\Models\Client;
 use App\Models\Contract;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
