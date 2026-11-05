@@ -9,4 +9,5 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('sanctum:prune-expired --hours=24')->daily();
+Schedule::command('contracts:notify-expiring')->dailyAt('07:00');
 Schedule::command('demo:reset')->dailyAt('03:00')->when(fn () => config('demo.enabled'));

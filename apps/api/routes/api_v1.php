@@ -8,10 +8,12 @@ use App\Http\Controllers\Api\V1\ClaimController;
 use App\Http\Controllers\Api\V1\ClientController;
 use App\Http\Controllers\Api\V1\ContractController;
 use App\Http\Controllers\Api\V1\ContractExportController;
+use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DemoAccountController;
 use App\Http\Controllers\Api\V1\DocumentController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\InsurerController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Models\ActivityLog;
 use App\Models\Claim;
@@ -35,6 +37,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/auth/tokens/current', [TokenController::class, 'destroy']);
 
     Route::get('/insurers', InsurerController::class);
+    Route::get('/dashboard', DashboardController::class)->can('viewDashboard');
+
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications/read-all', [NotificationController::class, 'readAll']);
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->whereUuid('notification');
 
     // Create and update are authorized by their form requests.
     Route::get('/clients', [ClientController::class, 'index'])->can('viewAny', Client::class);

@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Actions\Contracts\NotifyExpiringContracts;
 use App\Enums\ContractStatus;
 use App\Models\ActivityLog;
 use App\Models\Brokerage;
@@ -57,6 +58,8 @@ class DemoSeeder extends Seeder
         $this->seedMainBrokerage();
         $this->seedSecondBrokerage();
         $this->seedActivity();
+
+        app(NotifyExpiringContracts::class)->handle();
     }
 
     private function seedMainBrokerage(): void
