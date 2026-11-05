@@ -3,10 +3,14 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -18,6 +22,34 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
+     * @return BelongsTo<Brokerage, $this>
+     */
+    public function brokerage(): BelongsTo
+    {
+        return $this->belongsTo(Brokerage::class);
+    }
+
+    /**
+     * The clients in this broker's portfolio.
+     *
+     * @return HasMany<Client, $this>
+     */
+    public function portfolio(): HasMany
+    {
+        return $this->hasMany(Client::class, 'broker_id');
+    }
+
+    /**
+     * The client record linked to this portal account.
+     *
+     * @return HasOne<Client, $this>
+     */
+    public function clientProfile(): HasOne
+    {
+        return $this->hasOne(Client::class);
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -27,6 +59,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'role' => UserRole::class,
         ];
     }
 }
