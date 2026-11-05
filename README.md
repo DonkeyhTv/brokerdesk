@@ -46,6 +46,7 @@ docker compose exec php composer analyse
 docker compose exec php composer test
 docker compose exec broker npm test
 docker compose exec portal npm test
+docker compose --profile e2e run --rm e2e
 ```
 
 GitHub Actions runs linting, static analysis, tests and builds on every push, then boots the full stack with Docker Compose.

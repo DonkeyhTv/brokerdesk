@@ -11,10 +11,10 @@ return [
     'password' => 'password',
 
     'accounts' => [
-        ['label' => 'Brokerage admin', 'app' => 'broker', 'email' => 'admin@example.be'],
-        ['label' => 'Broker', 'app' => 'broker', 'email' => 'broker@example.be'],
-        ['label' => 'Individual client', 'app' => 'portal', 'email' => 'client@example.be'],
-        ['label' => 'Company client', 'app' => 'portal', 'email' => 'company@example.be'],
+        ['label' => 'Administrateur du cabinet', 'app' => 'broker', 'email' => 'admin@example.be'],
+        ['label' => 'Courtier', 'app' => 'broker', 'email' => 'broker@example.be'],
+        ['label' => 'Client particulier', 'app' => 'portal', 'email' => 'client@example.be'],
+        ['label' => 'Client société', 'app' => 'portal', 'email' => 'company@example.be'],
     ],
 
 ];

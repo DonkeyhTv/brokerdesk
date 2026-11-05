@@ -1,0 +1,203 @@
+import { expect, test } from '@playwright/test'
+import { readFileSync } from 'node:fs'
+import { signInToBackOffice, uniqueSuffix } from './helpers'
+
+test('guests are sent to the login page and come back after signing in', async ({ page }) => {
+  await page.goto('/contracts')
+  await expect(page).toHaveURL(/\/login\?redirect=/)
+
+  await page.getByRole('button', { name: 'Courtier', exact: true }).click()
+
+  await expect(page.getByRole('heading', { name: 'Contrats' })).toBeVisible()
+})
+
+test('wrong credentials are explained, and clients are sent to their portal', async ({ page }) => {
+  await page.goto('/login')
+
+  await page.getByLabel('Adresse e-mail').fill('nobody@example.be')
+  await page.getByLabel('Mot de passe').fill('wrong')
+  await page.getByRole('button', { name: 'Se connecter' }).click()
+  await expect(page.getByRole('alert')).toBeVisible()
+
+  await page.getByLabel('Adresse e-mail').fill('client@example.be')
+  await page.getByLabel('Mot de passe').fill('password')
+  await page.getByRole('button', { name: 'Se connecter' }).click()
+  await expect(page.getByText('connectez-vous au portail client')).toBeVisible()
+})
+
+test('a broker works on a client, a contract, a document and a claim', async ({ page }) => {
+  const suffix = uniqueSuffix()
+  const lastName = `Lefèvre${suffix}`
+
+  await signInToBackOffice(page, 'Courtier')
+  await expect(page.getByText('Dans 30 jours')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Primes annuelles par branche' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Équipe' })).toHaveCount(0)
+
+  await test.step('create a client, after fixing a validation error', async () => {
+    await page.getByRole('link', { name: 'Clients', exact: true }).click()
+    await page.getByRole('link', { name: 'Nouveau client' }).click()
+    await page.getByLabel('Prénom').fill('Émilie')
+    await page.getByLabel('Nom', { exact: true }).fill(lastName)
+    await page.getByLabel('E-mail').fill('not-an-email')
+    await page.getByLabel('Rue et numéro').fill('Rue de la Station 1')
+    await page.getByLabel('Code postal').fill('4000')
+    await page.getByLabel('Commune').fill('Liège')
+    await page.getByRole('button', { name: 'Enregistrer' }).click()
+    await expect(page.locator('#email-error')).toBeVisible()
+
+    await page.getByLabel('E-mail').fill(`emilie.${suffix}@example.be`)
+    await page.getByRole('button', { name: 'Enregistrer' }).click()
+    await expect(page.getByRole('heading', { name: `Émilie ${lastName}` })).toBeVisible()
+  })
+
+  await test.step('find the client, ignoring accents', async () => {
+    await page.getByRole('link', { name: 'Clients', exact: true }).click()
+    await page.getByLabel('Rechercher un client').fill(`lefevre${suffix}`)
+    await expect(page.getByRole('link', { name: `Émilie ${lastName}` })).toBeVisible()
+    await expect(page.locator('tbody tr')).toHaveCount(1)
+    await page.getByRole('link', { name: `Émilie ${lastName}` }).click()
+  })
+
+  const policyNumber = `E2E-${suffix}`
+
+  await test.step('add a contract to the client', async () => {
+    await page.getByRole('link', { name: 'Nouveau contrat' }).click()
+    await page.getByLabel('Assureur').selectOption({ label: 'Brabant Vie' })
+    await page.getByLabel('N° de police').fill(policyNumber)
+    await page.getByLabel('Date de début').fill('2026-01-01')
+    await page.getByLabel("Date d'échéance").fill('2027-01-01')
+    await page.getByLabel('Prime annuelle').fill('850,50')
+    await page.getByRole('button', { name: 'Enregistrer' }).click()
+
+    await expect(page.getByRole('heading', { name: policyNumber })).toBeVisible()
+    await expect(page.getByText('01/10/2026')).toBeVisible()
+    await expect(page.getByText(/850,50/)).toBeVisible()
+  })
+
+  await test.step('upload a PDF, refuse anything else, then download it', async () => {
+    const input = page.getByLabel('Fichier PDF')
+
+    await input.setInputFiles({
+      name: 'fake.pdf',
+      mimeType: 'application/pdf',
+      buffer: Buffer.from('<?php echo 1;'),
+    })
+    await page.getByRole('button', { name: 'Ajouter le PDF' }).click()
+    await expect(page.getByText('Seuls les fichiers PDF')).toBeVisible()
+
+    await input.setInputFiles({
+      name: 'conditions.pdf',
+      mimeType: 'application/pdf',
+      buffer: Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer<<>>\n%%EOF\n'),
+    })
+    await page.getByRole('button', { name: 'Ajouter le PDF' }).click()
+
+    const link = page.getByRole('link', { name: 'conditions.pdf' })
+    await expect(link).toBeVisible()
+    await expect(page.getByText('Visible par le client', { exact: false }).first()).toBeVisible()
+
+    const download = page.waitForEvent('download')
+    await link.click()
+    expect((await download).suggestedFilename()).toBe('conditions.pdf')
+  })
+
+  await test.step('declare a claim, settle it, and see it frozen', async () => {
+    await page.getByRole('link', { name: 'Déclarer un sinistre' }).click()
+    await page.getByLabel('Description').fill('Pare-chocs abîmé sur un parking.')
+    await page.getByRole('button', { name: 'Déclarer' }).click()
+
+    await expect(page.getByRole('heading', { name: /^SIN-/ })).toBeVisible()
+
+    await page.getByLabel('Statut').selectOption({ label: 'Réglé' })
+    await page.getByRole('button', { name: 'Enregistrer' }).click()
+    await expect(page.getByText('Indiquez le montant réglé.')).toBeVisible()
+
+    await page.getByLabel('Montant réglé').fill('420')
+    await page.getByRole('button', { name: 'Enregistrer' }).click()
+    await expect(page.getByText('il ne peut plus être modifié')).toBeVisible()
+  })
+
+  await test.step('export the filtered contracts as CSV', async () => {
+    await page.getByRole('link', { name: 'Contrats', exact: true }).click()
+    await page.getByLabel('Rechercher un contrat').fill(policyNumber)
+    await expect(page.locator('tbody tr')).toHaveCount(1)
+
+    const download = page.waitForEvent('download')
+    await page.getByRole('link', { name: 'Exporter en CSV' }).click()
+    const file = await (await download).path()
+    const csv = readFileSync(file, 'utf8')
+
+    expect(csv).toContain(policyNumber)
+    expect(csv.trim().split('\n')).toHaveLength(2)
+  })
+
+  await test.step('read a notification', async () => {
+    await page.getByRole('link', { name: /^Notifications/ }).click()
+    await expect(page.getByText('arrive à échéance').first()).toBeVisible()
+  })
+
+  await test.step('sign out', async () => {
+    await page.getByRole('button', { name: 'Se déconnecter' }).click()
+    await expect(page).toHaveURL(/\/login/)
+    await page.goto('/clients')
+    await expect(page).toHaveURL(/\/login/)
+  })
+})
+
+test('an admin manages the team and reads the activity log', async ({ page }) => {
+  const suffix = uniqueSuffix()
+
+  await signInToBackOffice(page, 'Administrateur du cabinet')
+  await expect(page.getByText('Tout le cabinet Cabinet Démo Meuse')).toBeVisible()
+
+  await page.getByRole('link', { name: 'Équipe' }).click()
+  await page.getByRole('button', { name: 'Ajouter un membre' }).click()
+  await page.getByLabel('Nom').fill(`Nora ${suffix}`)
+  await page.getByLabel('E-mail').fill(`nora.${suffix}@example.be`)
+  await page.getByLabel('Mot de passe').fill('short')
+  await page.getByRole('button', { name: 'Enregistrer' }).click()
+  await expect(page.locator('#password-error')).toBeVisible()
+
+  await page.getByLabel('Mot de passe').fill('long-enough-password')
+  await page.getByRole('button', { name: 'Enregistrer' }).click()
+  const row = page.getByRole('row', { name: new RegExp(`Nora ${suffix}`) })
+  await expect(row).toBeVisible()
+
+  page.once('dialog', (dialog) => dialog.accept())
+  await row.getByRole('button', { name: 'Retirer' }).click()
+  await expect(row).toHaveCount(0)
+
+  await page.getByRole('link', { name: 'Journal' }).click()
+  await expect(page.getByRole('heading', { name: "Journal d'activité" })).toBeVisible()
+  await expect(page.getByText(/a (créé|modifié)/).first()).toBeVisible()
+})
+
+test('takes the README screenshots', async ({ page }) => {
+  test.skip(!process.env.SCREENSHOTS, 'Only on demand: SCREENSHOTS=1')
+
+  const shot = async (name: string) => {
+    await page.mouse.move(0, 0)
+    await page.screenshot({ path: `../docs/screenshots/${name}.png` })
+  }
+
+  await page.goto('/login')
+  await expect(page.getByText("Vous évaluez l'application ?")).toBeVisible()
+  await shot('back-office-login')
+
+  await page.getByRole('button', { name: 'Administrateur du cabinet', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Primes annuelles par branche' })).toBeVisible()
+  await shot('back-office-dashboard')
+
+  await page.getByRole('link', { name: 'Contrats', exact: true }).click()
+  await expect(page.locator('tbody tr').first()).toBeVisible()
+  await shot('back-office-contracts')
+
+  await page.locator('tbody tr').first().getByRole('link').first().click()
+  await expect(page.getByRole('heading', { name: 'Documents' })).toBeVisible()
+  await shot('back-office-contract')
+
+  await page.getByRole('link', { name: 'Journal' }).click()
+  await expect(page.getByText(/a (créé|modifié)/).first()).toBeVisible()
+  await shot('back-office-activity')
+})
