@@ -2,8 +2,10 @@
 
 use App\Enums\ClientType;
 use App\Models\User;
+use App\Notifications\ContractExpiring;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Support\Facades\Notification;
 
 it('hides the demo accounts unless demo mode is on', function () {
     $this->getJson('/api/v1/demo/accounts')->assertNotFound();
@@ -43,6 +45,14 @@ it('allows demo data in production only in demo mode', function () {
 
     $this->artisan('demo:seed')->assertSuccessful();
     expect(User::query()->count())->toBeGreaterThan(0);
+});
+
+it('fills the notification bell of the demo broker', function () {
+    Notification::fake();
+
+    $this->seed(DemoSeeder::class);
+
+    Notification::assertSentTo(User::query()->where('email', 'broker@example.be')->firstOrFail(), ContractExpiring::class);
 });
 
 it('refuses to erase data outside demo mode', function () {
