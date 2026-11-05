@@ -52,6 +52,7 @@ class AppServiceProvider extends ServiceProvider
         ]);
 
         Gate::define('viewApiDocs', fn (?object $user = null) => true);
+        Gate::define('viewDashboard', fn (User $user) => $user->isStaff());
 
         Scramble::configure()->withDocumentTransformers(function (OpenApi $openApi) {
             $openApi->secure(SecurityScheme::http('bearer'));
