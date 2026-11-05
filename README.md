@@ -36,6 +36,8 @@ Demo mode is on by default locally and loads fictional Belgian data. All account
 
 > Demo mode exposes these accounts through the API and erases all data every night at 03:00. Never enable `DEMO_MODE` on real data.
 
+API documentation (OpenAPI) is served at http://localhost:8000/docs/api.
+
 ## Quality checks
 
 ```sh

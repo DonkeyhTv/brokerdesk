@@ -42,7 +42,7 @@ it('builds the search name from the client identity', function () {
     $individual = Client::factory()->create(['first_name' => 'Émilie', 'last_name' => 'Dubois']);
     $company = Client::factory()->company()->create(['company_name' => 'Garage Maes BV']);
 
-    expect(trim($individual->fresh()?->search_name ?? ''))->toBe('émilie dubois')
+    expect(trim($individual->fresh()?->search_name ?? ''))->toBe('emilie dubois')
         ->and(trim($company->fresh()?->search_name ?? ''))->toBe('garage maes bv');
 });
 

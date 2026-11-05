@@ -2,34 +2,37 @@
 
 namespace App\Policies;
 
-use App\Models\Client;
 use App\Models\Contract;
 use App\Models\User;
+use App\Policies\Concerns\ConcealsRecords;
+use Illuminate\Auth\Access\Response;
 
 class ContractPolicy
 {
+    use ConcealsRecords;
+
     public function viewAny(User $user): bool
     {
         return true;
     }
 
-    public function view(User $user, Contract $contract): bool
+    public function view(User $user, Contract $contract): Response
     {
-        return $user->manages($contract->client) || $user->isAccountOf($contract->client);
+        return $this->conceal($user->canSee($contract->client));
     }
 
-    public function create(User $user, Client $client): bool
+    public function create(User $user): bool
     {
-        return $user->manages($client);
+        return $user->isStaff();
     }
 
-    public function update(User $user, Contract $contract): bool
+    public function update(User $user, Contract $contract): Response
     {
-        return $user->manages($contract->client);
+        return $this->conceal($user->canSee($contract->client), $user->manages($contract->client));
     }
 
-    public function delete(User $user, Contract $contract): bool
+    public function delete(User $user, Contract $contract): Response
     {
-        return $user->manages($contract->client);
+        return $this->conceal($user->canSee($contract->client), $user->manages($contract->client));
     }
 }

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Casts\EnterpriseNumberCast;
 use App\Enums\ClientType;
 use App\Enums\UserRole;
+use App\Support\EnterpriseNumber;
 use Database\Factories\ClientFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -15,6 +16,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property EnterpriseNumber|null $enterprise_number
+ */
 #[Fillable(['type', 'first_name', 'last_name', 'company_name', 'enterprise_number', 'email', 'phone', 'street', 'postal_code', 'city'])]
 class Client extends Model
 {
@@ -53,6 +57,32 @@ class Client extends Model
     public function contracts(): HasMany
     {
         return $this->hasMany(Contract::class);
+    }
+
+    public function displayName(): string
+    {
+        return $this->company_name ?? trim($this->first_name.' '.$this->last_name);
+    }
+
+    /**
+     * Match a name, an email or an enterprise number, ignoring accents and case.
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function search(Builder $query, string $term): void
+    {
+        $pattern = '%'.addcslashes($term, '%_\\').'%';
+        $digits = preg_replace('/\D/', '', $term);
+
+        $query->where(function (Builder $clients) use ($pattern, $digits) {
+            $clients->whereRaw('search_name LIKE immutable_unaccent(lower(?))', [$pattern])
+                ->orWhere('email', 'ilike', $pattern);
+
+            if ($digits !== null && strlen($digits) >= 3) {
+                $clients->orWhere('enterprise_number', 'like', '%'.$digits.'%');
+            }
+        });
     }
 
     /**

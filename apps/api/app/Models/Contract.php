@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ContractStatus;
 use App\Enums\ContractType;
 use App\Enums\PaymentFrequency;
+use Carbon\CarbonImmutable;
 use Database\Factories\ContractFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -15,6 +16,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property ContractType $type
+ * @property ContractStatus $status
+ * @property CarbonImmutable $starts_on
+ * @property CarbonImmutable $expires_on
+ */
 #[Fillable(['insurer_id', 'policy_number', 'type', 'status', 'starts_on', 'expires_on', 'annual_premium_cents', 'payment_frequency'])]
 class Contract extends Model
 {
@@ -69,6 +76,14 @@ class Contract extends Model
     public function expiryAlerts(): HasMany
     {
         return $this->hasMany(ContractExpiryAlert::class);
+    }
+
+    /**
+     * Belgian law: a tacitly renewed contract must be cancelled three months before it expires.
+     */
+    public function noticeDeadline(): CarbonImmutable
+    {
+        return $this->expires_on->subMonthsNoOverflow(3);
     }
 
     /**
