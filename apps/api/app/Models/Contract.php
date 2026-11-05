@@ -7,6 +7,8 @@ use App\Enums\ContractType;
 use App\Enums\PaymentFrequency;
 use Database\Factories\ContractFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,11 +30,13 @@ class Contract extends Model
     }
 
     /**
+     * Includes soft-deleted clients, so a contract keeps its history and its access rules.
+     *
      * @return BelongsTo<Client, $this>
      */
     public function client(): BelongsTo
     {
-        return $this->belongsTo(Client::class);
+        return $this->belongsTo(Client::class)->withTrashed();
     }
 
     /**
@@ -65,6 +69,15 @@ class Contract extends Model
     public function expiryAlerts(): HasMany
     {
         return $this->hasMany(ContractExpiryAlert::class);
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function visibleTo(Builder $query, User $user): void
+    {
+        $query->whereHas('client', fn (Builder $clients) => $clients->visibleTo($user));
     }
 
     /**

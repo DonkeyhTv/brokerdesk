@@ -23,6 +23,19 @@ docker compose up
 
 The first start installs dependencies and can take a few minutes.
 
+## Try it
+
+Demo mode is on by default locally and loads fictional Belgian data. All accounts use the password `password`.
+
+| Account | Signs in to | Email |
+| --- | --- | --- |
+| Brokerage admin | Back office | `admin@example.be` |
+| Broker | Back office | `broker@example.be` |
+| Individual client | Client portal | `client@example.be` |
+| Company client | Client portal | `company@example.be` |
+
+> Demo mode exposes these accounts through the API and erases all data every night at 03:00. Never enable `DEMO_MODE` on real data.
+
 ## Quality checks
 
 ```sh

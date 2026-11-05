@@ -10,12 +10,12 @@ class SeedDemoData extends Command
 {
     protected $signature = 'demo:seed';
 
-    protected $description = 'Load the demo data into an empty local database';
+    protected $description = 'Load the demo data into an empty database, locally or in demo mode';
 
     public function handle(): int
     {
-        if (! app()->isLocal()) {
-            $this->components->info('Skipped: demo data is only loaded in the local environment.');
+        if (! DemoSeeder::isAllowed()) {
+            $this->components->info('Skipped: demo data needs the local environment or demo mode.');
 
             return self::SUCCESS;
         }
