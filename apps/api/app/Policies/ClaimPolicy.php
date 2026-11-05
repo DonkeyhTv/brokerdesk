@@ -4,35 +4,40 @@ namespace App\Policies;
 
 use App\Enums\UserRole;
 use App\Models\Claim;
-use App\Models\Contract;
 use App\Models\User;
+use App\Policies\Concerns\ConcealsRecords;
+use Illuminate\Auth\Access\Response;
 
 class ClaimPolicy
 {
+    use ConcealsRecords;
+
     public function viewAny(User $user): bool
     {
         return true;
     }
 
-    public function view(User $user, Claim $claim): bool
+    public function view(User $user, Claim $claim): Response
+    {
+        return $this->conceal($user->canSee($claim->contract->client));
+    }
+
+    public function create(User $user): bool
+    {
+        return true;
+    }
+
+    public function update(User $user, Claim $claim): Response
     {
         $client = $claim->contract->client;
 
-        return $user->manages($client) || $user->isAccountOf($client);
+        return $this->conceal($user->canSee($client), $user->manages($client));
     }
 
-    public function create(User $user, Contract $contract): bool
+    public function delete(User $user, Claim $claim): Response
     {
-        return $user->manages($contract->client) || $user->isAccountOf($contract->client);
-    }
+        $client = $claim->contract->client;
 
-    public function update(User $user, Claim $claim): bool
-    {
-        return $user->manages($claim->contract->client);
-    }
-
-    public function delete(User $user, Claim $claim): bool
-    {
-        return $user->role === UserRole::Admin && $user->manages($claim->contract->client);
+        return $this->conceal($user->canSee($client), $user->role === UserRole::Admin && $user->manages($client));
     }
 }

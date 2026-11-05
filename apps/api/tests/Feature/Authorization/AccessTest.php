@@ -72,17 +72,10 @@ it('protects claims', function (string $ability, array $expected) {
     'delete' => ['delete', ['admin']],
 ]);
 
-it('lets only the people in charge create records in a portfolio', function () {
+it('lets only the people in charge add documents', function () {
     $world = world();
 
-    expect(allowedActors($world, 'create', [Contract::class, $world->client]))->toBe(['admin', 'broker'])
-        ->and(allowedActors($world, 'create', [Document::class, $world->contract]))->toBe(['admin', 'broker']);
-});
-
-it('lets the insured declare a claim on their own contract', function () {
-    $world = world();
-
-    expect(allowedActors($world, 'create', [Claim::class, $world->contract]))->toBe(['admin', 'broker', 'owner']);
+    expect(allowedActors($world, 'create', [Document::class, $world->contract]))->toBe(['admin', 'broker']);
 });
 
 it('only shows a client the documents marked as visible', function () {

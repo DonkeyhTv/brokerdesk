@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ClaimStatus;
+use Carbon\CarbonImmutable;
 use Database\Factories\ClaimFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -11,6 +12,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property ClaimStatus $status
+ * @property CarbonImmutable $occurred_on
+ * @property CarbonImmutable|null $closed_at
+ */
 #[Fillable(['occurred_on', 'description', 'status', 'estimated_amount_cents', 'settled_amount_cents'])]
 class Claim extends Model
 {
