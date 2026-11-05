@@ -23,7 +23,7 @@ class ContractListQuery
         /** @var User $user */
         $user = $request->user();
 
-        return QueryBuilder::for(Contract::query()->visibleTo($user)->with('client', 'insurer'), $request)
+        $contracts = QueryBuilder::for(Contract::query()->visibleTo($user)->with('client', 'insurer'), $request)
             ->allowedFilters(
                 AllowedFilter::callback('search', function (Builder $query, mixed $value) {
                     $term = (string) $value;
@@ -45,5 +45,10 @@ class ContractListQuery
             )
             ->allowedSorts('expires_on', 'annual_premium_cents', 'policy_number', 'created_at')
             ->defaultSort('expires_on');
+
+        // A stable order, so that pages and export chunks never repeat or skip a row.
+        $contracts->orderBy('id');
+
+        return $contracts;
     }
 }

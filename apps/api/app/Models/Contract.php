@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Contracts\Auditable;
 use App\Enums\ContractStatus;
 use App\Enums\ContractType;
 use App\Enums\PaymentFrequency;
+use App\Observers\ActivityObserver;
 use Carbon\CarbonImmutable;
 use Database\Factories\ContractFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,11 +22,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * @property ContractType $type
  * @property ContractStatus $status
+ * @property PaymentFrequency $payment_frequency
  * @property CarbonImmutable $starts_on
  * @property CarbonImmutable $expires_on
  */
+#[ObservedBy(ActivityObserver::class)]
 #[Fillable(['insurer_id', 'policy_number', 'type', 'status', 'starts_on', 'expires_on', 'annual_premium_cents', 'payment_frequency'])]
-class Contract extends Model
+class Contract extends Model implements Auditable
 {
     /** @use HasFactory<ContractFactory> */
     use HasFactory, SoftDeletes;
@@ -108,5 +113,15 @@ class Contract extends Model
             'expires_on' => 'immutable_date',
             'annual_premium_cents' => 'integer',
         ];
+    }
+
+    public function auditBrokerageId(): int
+    {
+        return $this->brokerage_id;
+    }
+
+    public function auditLabel(): string
+    {
+        return $this->policy_number;
     }
 }

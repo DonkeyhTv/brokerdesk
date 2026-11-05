@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Contracts\Auditable;
 use App\Enums\ClaimStatus;
+use App\Observers\ActivityObserver;
 use Carbon\CarbonImmutable;
 use Database\Factories\ClaimFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,8 +20,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property CarbonImmutable $occurred_on
  * @property CarbonImmutable|null $closed_at
  */
+#[ObservedBy(ActivityObserver::class)]
 #[Fillable(['occurred_on', 'description', 'status', 'estimated_amount_cents', 'settled_amount_cents'])]
-class Claim extends Model
+class Claim extends Model implements Auditable
 {
     /** @use HasFactory<ClaimFactory> */
     use HasFactory;
@@ -68,5 +72,15 @@ class Claim extends Model
             'settled_amount_cents' => 'integer',
             'closed_at' => 'immutable_datetime',
         ];
+    }
+
+    public function auditBrokerageId(): int
+    {
+        return $this->brokerage_id;
+    }
+
+    public function auditLabel(): string
+    {
+        return $this->reference;
     }
 }

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Database\Seeders\DemoSeeder;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Storage;
 
 class ResetDemoData extends Command
 {
@@ -20,6 +21,7 @@ class ResetDemoData extends Command
         }
 
         $this->call('migrate:fresh', ['--force' => true]);
+        Storage::disk('local')->deleteDirectory('documents');
         $this->call('db:seed', ['--class' => DemoSeeder::class, '--force' => true]);
 
         return self::SUCCESS;
