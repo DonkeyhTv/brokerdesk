@@ -1,5 +1,9 @@
 x-api: &api
   build: ./apps/api
+  # Same user everywhere, including "docker compose exec", so that files stay readable by php-fpm.
+  user: www-data
+  environment:
+    COMPOSER_HOME: /tmp/composer
   volumes:
     - ./apps/api:/app
     - api_vendor:/app/vendor
@@ -24,6 +28,7 @@ services:
 
   setup:
     <<: *api
+    user: root
     command: api-setup
     depends_on:
       db:
@@ -37,7 +42,6 @@ services:
 
   worker:
     <<: *api
-    user: www-data
     command: php artisan queue:work --tries=3
     depends_on:
       setup:
@@ -45,7 +49,6 @@ services:
 
   scheduler:
     <<: *api
-    user: www-data
     command: php artisan schedule:work
     depends_on:
       setup:
