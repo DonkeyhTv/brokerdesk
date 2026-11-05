@@ -1,0 +1,24 @@
+<?php
+
+namespace App\Models;
+
+use Database\Factories\InsurerFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+#[Fillable(['name'])]
+class Insurer extends Model
+{
+    /** @use HasFactory<InsurerFactory> */
+    use HasFactory;
+
+    /**
+     * @return HasMany<Contract, $this>
+     */
+    public function contracts(): HasMany
+    {
+        return $this->hasMany(Contract::class);
+    }
+}
