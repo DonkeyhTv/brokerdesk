@@ -43,6 +43,11 @@ class UserFactory extends Factory
         return $this->state(['role' => UserRole::Admin]);
     }
 
+    public function broker(): static
+    {
+        return $this->state(['role' => UserRole::Broker]);
+    }
+
     public function client(): static
     {
         return $this->state(['role' => UserRole::Client]);

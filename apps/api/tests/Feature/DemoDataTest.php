@@ -25,6 +25,7 @@ it('creates the documented demo accounts', function (string $email, UserRole $ro
     ['admin@example.be', UserRole::Admin],
     ['broker@example.be', UserRole::Broker],
     ['client@example.be', UserRole::Client],
+    ['company@example.be', UserRole::Client],
 ]);
 
 it('gives the demo client contracts and claims to look at', function () {
@@ -112,4 +113,4 @@ it('refuses to run the demo seeder in production', function () {
     app()->detectEnvironment(fn () => 'production');
 
     (new DemoSeeder)->run();
-})->throws(RuntimeException::class, 'local and testing');
+})->throws(RuntimeException::class, 'demo mode');

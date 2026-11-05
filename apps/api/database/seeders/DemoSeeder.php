@@ -28,10 +28,15 @@ class DemoSeeder extends Seeder
      */
     private Collection $insurers;
 
+    public static function isAllowed(): bool
+    {
+        return app()->environment(['local', 'testing']) || config('demo.enabled');
+    }
+
     public function run(): void
     {
-        if (! app()->environment(['local', 'testing'])) {
-            throw new RuntimeException('Demo data can only be seeded in local and testing environments.');
+        if (! self::isAllowed()) {
+            throw new RuntimeException('Demo data needs the local or testing environment, or demo mode.');
         }
 
         fake()->seed(20261105);
@@ -61,6 +66,7 @@ class DemoSeeder extends Seeder
         $otherBrokers = User::factory()->count(2)->for($brokerage)->create();
 
         $this->seedDemoClient($brokerage, $demoBroker);
+        $this->seedDemoCompany($brokerage, $demoBroker);
         $this->seedPortfolio($brokerage, $demoBroker, individuals: 25, companies: 8);
 
         foreach ($otherBrokers as $broker) {
@@ -107,6 +113,29 @@ class DemoSeeder extends Seeder
 
         Claim::factory()->create(['contract_id' => $motor->id, 'declared_by' => $account->id]);
         Claim::factory()->settled()->create(['contract_id' => $home->id, 'declared_by' => $account->id]);
+    }
+
+    /**
+     * The same portal experience, for a client that is a company.
+     */
+    private function seedDemoCompany(Brokerage $brokerage, User $broker): void
+    {
+        $account = User::factory()->client()->for($brokerage)->create(['name' => 'Demo Company', 'email' => 'company@example.be']);
+
+        $client = Client::factory()->company()->create([
+            'brokerage_id' => $brokerage->id,
+            'broker_id' => $broker->id,
+            'user_id' => $account->id,
+            'company_name' => 'Demo Company SRL',
+            'email' => 'company@example.be',
+        ]);
+
+        $business = Contract::factory()->expiringInDays(50)->create($this->contractAttributes($client, ['type' => 'business']));
+        $fleet = Contract::factory()->create($this->contractAttributes($client, ['type' => 'motor']));
+        Contract::factory()->create($this->contractAttributes($client, ['type' => 'liability']));
+
+        Claim::factory()->create(['contract_id' => $business->id, 'declared_by' => $account->id]);
+        Claim::factory()->inReview()->create(['contract_id' => $fleet->id, 'declared_by' => $account->id]);
     }
 
     private function seedPortfolio(Brokerage $brokerage, User $broker, int $individuals, int $companies): void

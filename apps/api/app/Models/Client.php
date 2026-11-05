@@ -4,8 +4,11 @@ namespace App\Models;
 
 use App\Casts\EnterpriseNumberCast;
 use App\Enums\ClientType;
+use App\Enums\UserRole;
 use Database\Factories\ClientFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -50,6 +53,19 @@ class Client extends Model
     public function contracts(): HasMany
     {
         return $this->hasMany(Contract::class);
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function visibleTo(Builder $query, User $user): void
+    {
+        match ($user->role) {
+            UserRole::Admin => $query->where('brokerage_id', $user->brokerage_id),
+            UserRole::Broker => $query->where('broker_id', $user->id),
+            UserRole::Client => $query->where('user_id', $user->id),
+        };
     }
 
     /**

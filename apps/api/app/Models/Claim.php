@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Enums\ClaimStatus;
 use Database\Factories\ClaimFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,7 +30,7 @@ class Claim extends Model
      */
     public function contract(): BelongsTo
     {
-        return $this->belongsTo(Contract::class);
+        return $this->belongsTo(Contract::class)->withTrashed();
     }
 
     /**
@@ -37,6 +39,15 @@ class Claim extends Model
     public function declarer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'declared_by');
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function visibleTo(Builder $query, User $user): void
+    {
+        $query->whereHas('contract', fn (Builder $contracts) => $contracts->visibleTo($user));
     }
 
     /**
