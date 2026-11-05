@@ -5,7 +5,7 @@ const apiStatus = ref('checking')
 
 onMounted(async () => {
   try {
-    const response = await fetch('/api/health')
+    const response = await fetch('/api/v1/health')
     apiStatus.value = response.ok ? (await response.json()).status : 'error'
   } catch {
     apiStatus.value = 'error'

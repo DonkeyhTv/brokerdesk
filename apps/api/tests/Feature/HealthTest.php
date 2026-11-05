@@ -1,15 +1,13 @@
 <?php
 
-namespace Tests\Feature;
+it('reports a healthy API connected to PostgreSQL', function () {
+    $this->getJson('/api/v1/health')
+        ->assertOk()
+        ->assertExactJson(['status' => 'ok', 'database' => 'pgsql']);
+});
 
-use Tests\TestCase;
-
-class HealthTest extends TestCase
-{
-    public function test_health_endpoint_reports_ok(): void
-    {
-        $this->getJson('/api/health')
-            ->assertOk()
-            ->assertJsonPath('status', 'ok');
-    }
-}
+it('answers unknown API routes with JSON', function () {
+    $this->getJson('/api/v1/unknown')
+        ->assertNotFound()
+        ->assertJsonStructure(['message']);
+});
