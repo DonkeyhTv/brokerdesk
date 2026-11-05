@@ -13,13 +13,17 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
+/**
+ * @property UserRole $role
+ */
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * @return BelongsTo<Brokerage, $this>
@@ -47,6 +51,28 @@ class User extends Authenticatable
     public function clientProfile(): HasOne
     {
         return $this->hasOne(Client::class);
+    }
+
+    public function isStaff(): bool
+    {
+        return $this->role !== UserRole::Client;
+    }
+
+    /**
+     * Whether this user is in charge of the client: its broker, or an admin of its brokerage.
+     */
+    public function manages(Client $client): bool
+    {
+        return match ($this->role) {
+            UserRole::Admin => $this->brokerage_id === $client->brokerage_id,
+            UserRole::Broker => $this->id === $client->broker_id,
+            UserRole::Client => false,
+        };
+    }
+
+    public function isAccountOf(Client $client): bool
+    {
+        return $this->id === $client->user_id;
     }
 
     /**
