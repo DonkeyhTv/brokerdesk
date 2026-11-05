@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -45,6 +46,18 @@ class Document extends Model implements Auditable
     {
         $query->whereHas('contract', fn (Builder $contracts) => $contracts->visibleTo($user))
             ->when($user->role === UserRole::Client, fn (Builder $documents) => $documents->where('visible_to_client', true));
+    }
+
+    /**
+     * Path separators and control characters would break the download headers.
+     *
+     * @return Attribute<string, string>
+     */
+    protected function originalName(): Attribute
+    {
+        return Attribute::make(
+            set: fn (string $value) => mb_substr((string) preg_replace('/[\/\\\\\x00-\x1f\x7f]+/u', '_', $value), 0, 255),
+        );
     }
 
     /**

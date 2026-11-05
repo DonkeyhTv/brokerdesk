@@ -104,6 +104,7 @@ class ClientController extends Controller
         }
 
         $client->delete();
+        $client->user?->tokens()->delete();
 
         return response()->noContent();
     }
