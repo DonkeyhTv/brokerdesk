@@ -86,7 +86,7 @@ jobs:
           for url in \
             http://localhost:8000/api/v1/health \
             http://localhost:5173/api/v1/health \
-            http://localhost:3000/api/v1/health; do
+            http://localhost:3000/; do
             timeout 300 sh -c "until curl -fs $url; do sleep 5; done"
             echo " <- $url"
           done
