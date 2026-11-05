@@ -6,7 +6,7 @@ export function ApiStatus() {
   const [status, setStatus] = useState("checking");
 
   useEffect(() => {
-    fetch("/api/health")
+    fetch("/api/v1/health")
       .then(async (response) =>
         setStatus(response.ok ? (await response.json()).status : "error"),
       )

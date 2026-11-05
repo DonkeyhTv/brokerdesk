@@ -1,9 +1,6 @@
 name: CI
 
-on:
-  push:
-    branches: [main]
-  pull_request:
+on: push
 
 jobs:
   api:
@@ -26,10 +23,7 @@ jobs:
           --health-timeout 3s
           --health-retries 20
     env:
-      DB_CONNECTION: pgsql
       DB_HOST: 127.0.0.1
-      DB_PORT: 5432
-      DB_DATABASE: brokerdesk_test
       DB_USERNAME: brokerdesk
       DB_PASSWORD: brokerdesk
     steps:
@@ -41,8 +35,9 @@ jobs:
           coverage: none
       - run: composer install --no-interaction --prefer-dist
       - run: cp .env.example .env && php artisan key:generate
-      - run: vendor/bin/pint --test
-      - run: php artisan test
+      - run: composer format
+      - run: composer analyse
+      - run: composer test
 
   broker:
     runs-on: ubuntu-latest
@@ -57,6 +52,7 @@ jobs:
           cache: npm
           cache-dependency-path: apps/broker/package-lock.json
       - run: npm ci
+      - run: npm run format:check
       - run: npx oxlint .
       - run: npx eslint .
       - run: npm test
@@ -75,6 +71,25 @@ jobs:
           cache: npm
           cache-dependency-path: apps/portal/package-lock.json
       - run: npm ci
+      - run: npm run format:check
       - run: npm run lint
       - run: npm test
       - run: npm run build
+
+  stack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose up -d --build
+      - name: Wait for every service to reach the API
+        run: |
+          for url in \
+            http://localhost:8000/api/v1/health \
+            http://localhost:5173/api/v1/health \
+            http://localhost:3000/api/v1/health; do
+            timeout 300 sh -c "until curl -fs $url; do sleep 5; done"
+            echo " <- $url"
+          done
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --tail 50

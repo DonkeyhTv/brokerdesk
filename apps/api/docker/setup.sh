@@ -5,5 +5,4 @@ set -e
 composer install --no-interaction --prefer-dist
 grep -q '^APP_KEY=base64:' .env || php artisan key:generate --force
 php artisan migrate --force
-
-exec "$@"
+chmod -R a+rwX storage bootstrap/cache
