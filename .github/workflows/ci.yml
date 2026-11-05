@@ -34,6 +34,7 @@ jobs:
           extensions: pdo_pgsql
           coverage: none
       - run: composer install --no-interaction --prefer-dist
+      - run: composer audit --no-dev
       - run: cp .env.example .env && php artisan key:generate
       - run: composer format
       - run: composer analyse
@@ -52,6 +53,7 @@ jobs:
           cache: npm
           cache-dependency-path: apps/broker/package-lock.json
       - run: npm ci
+      - run: npm audit --omit=dev
       - run: npm run format:check
       - run: npx oxlint .
       - run: npx eslint .
@@ -71,6 +73,7 @@ jobs:
           cache: npm
           cache-dependency-path: apps/portal/package-lock.json
       - run: npm ci
+      - run: npm audit --omit=dev
       - run: npm run format:check
       - run: npm run lint
       - run: npm test

@@ -1,17 +1,17 @@
 # BrokerDesk
 
-A mini-SaaS for Belgian insurance brokers: clients, contracts, renewals and claims, with a separate portal for policyholders.
+A mini-SaaS for Belgian insurance brokers: they manage clients, contracts, renewals and claims, while policyholders follow theirs in a separate portal.
 
-> Work in progress, built phase by phase.
+[![CI](https://github.com/DonkeyhTv/brokerdesk/actions/workflows/ci.yml/badge.svg)](https://github.com/DonkeyhTv/brokerdesk/actions/workflows/ci.yml)
 
-| Service | Purpose | Stack | Local URL |
-| --- | --- | --- | --- |
-| `apps/api` | REST API | Laravel 13, PHP 8.4, PostgreSQL 17 | http://localhost:8000 |
-| `apps/broker` | Broker back office | Vue 3, TypeScript, Pinia | http://localhost:5173 |
-| `apps/portal` | Client portal | Next.js, React, TypeScript | http://localhost:3000 |
-| `mailpit` | Local mail catcher | Mailpit | http://localhost:8025 |
+![A tour of the broker back office and the client portal](docs/demo.gif)
 
-## Getting started
+| Broker dashboard | Client portal |
+| --- | --- |
+| ![Broker dashboard with renewal windows and premium volume](docs/screenshots/back-office-dashboard.png) | ![Client portal listing the contracts of a company](docs/screenshots/portal-contracts.png) |
+| ![Contract list with filters and CSV export](docs/screenshots/back-office-contracts.png) | ![Contract page with shared documents and claims](docs/screenshots/portal-contract.png) |
+
+## Try it
 
 Docker is the only requirement:
 
@@ -21,32 +21,160 @@ cd brokerdesk
 docker compose up
 ```
 
-The first start installs dependencies and can take a few minutes.
+The first start installs dependencies and takes a few minutes. Then open the application of your choice. The login pages offer these accounts in one click.
 
-## Try it
+| Account | Application | Email | Password |
+| --- | --- | --- | --- |
+| Brokerage admin | [Back office](http://localhost:5173) | `admin@example.be` | `password` |
+| Broker | [Back office](http://localhost:5173) | `broker@example.be` | `password` |
+| Individual client | [Client portal](http://localhost:3000) | `client@example.be` | `password` |
+| Company client | [Client portal](http://localhost:3000) | `company@example.be` | `password` |
 
-Demo mode is on by default locally and loads fictional Belgian data. All accounts use the password `password`.
+Also available: the [API documentation](http://localhost:8000/docs/api) and the mail catcher, [Mailpit](http://localhost:8025), which shows the expiry alerts.
 
-| Account | Signs in to | Email |
+All data is fictional, except for real Belgian communes and postal codes. The interface is in French, because its users are Belgian. Code and documentation are in English.
+
+## What it does
+
+- **Roles:** an admin sees the whole brokerage and manages its team, a broker sees their own portfolio, and a client sees only their own records.
+- **Clients, contracts and claims:** create, edit and delete, with search that ignores accents, filters, sorting and pagination.
+- **Renewals:** a daily job alerts brokers at 90, 60 and 30 days before expiry, in the app and by mail. Belgian contracts renew tacitly unless cancelled three months ahead, so the alerts state that deadline.
+- **Documents:** private PDF storage per contract, and brokers choose what clients can see.
+- **Claims:** clients declare them in the portal, and brokers follow them up until they are settled or rejected.
+- **Traceability:** an activity log records who changed what and when, and contracts export to CSV.
+
+## Stack and why
+
+| Layer | Choice | Why |
 | --- | --- | --- |
-| Brokerage admin | Back office | `admin@example.be` |
-| Broker | Back office | `broker@example.be` |
-| Individual client | Client portal | `client@example.be` |
-| Company client | Client portal | `company@example.be` |
+| API | Laravel 13, PHP 8.4, Sanctum | Policies, form requests and queues cover this domain without custom plumbing. |
+| Database | PostgreSQL 17 | Composite foreign keys, `CHECK` constraints, partial indexes and trigram search put real guarantees in the database. |
+| Back office | Vue 3, TypeScript, Pinia, Tailwind | A signed-in tool with lots of state, where a single-page app fits and search engines do not matter. |
+| Client portal | Next.js 16, React 19, TypeScript, Tailwind | Server rendering keeps the API token out of the browser and gives public pages proper metadata. |
+| Infrastructure | Docker Compose, nginx, php-fpm, Mailpit | One command starts everything, with a queue worker and a scheduler like in production. |
+| Quality | Pest, Vitest, Playwright, Larastan level 6, Pint, ESLint, oxlint, Prettier | Each layer has its own checks, and browser tests cover the whole stack. |
 
-> Demo mode exposes these accounts through the API and erases all data every night at 03:00. Never enable `DEMO_MODE` on real data.
+### Decisions worth a look
 
-API documentation (OpenAPI) is served at http://localhost:8000/docs/api.
+- **Tenant isolation is enforced twice.** Queries and policies filter by brokerage, and composite foreign keys such as `(client_id, brokerage_id)` make a cross-brokerage reference impossible even if the code has a bug. See [the contracts migration](apps/api/database/migrations/2026_11_05_100200_create_contracts_table.php).
+- **Two authentication flows, for two kinds of client.** The Vue app uses Sanctum cookie sessions with CSRF. The Next.js server holds a Sanctum token in an `httpOnly` cookie and calls the API itself, so scripts in the browser never see it.
+- **Records a user may not see answer 404, not 403,** so their existence stays hidden. See [the policies](apps/api/app/Policies).
+- **Money is stored in integer cents, and Belgian enterprise numbers are value objects** validated with their mod 97 check digits. See [`EnterpriseNumber`](apps/api/app/Support/EnterpriseNumber.php).
+- **N+1 queries fail the tests,** because lazy loading is prevented outside production.
 
-## Quality checks
+## Database schema
 
-```sh
-docker compose exec php composer format
-docker compose exec php composer analyse
-docker compose exec php composer test
-docker compose exec broker npm test
-docker compose exec portal npm test
-docker compose --profile e2e run --rm e2e
+```mermaid
+erDiagram
+    BROKERAGES ||--o{ USERS : employs
+    BROKERAGES ||--o{ CLIENTS : owns
+    BROKERAGES ||--o{ CONTRACTS : owns
+    BROKERAGES ||--o{ CLAIMS : owns
+    BROKERAGES ||--o{ ACTIVITY_LOGS : records
+    USERS ||--o{ CLIENTS : "manages as broker"
+    USERS |o--o| CLIENTS : "signs in as"
+    CLIENTS ||--o{ CONTRACTS : holds
+    INSURERS ||--o{ CONTRACTS : underwrites
+    CONTRACTS ||--o{ CLAIMS : "is subject to"
+    CONTRACTS ||--o{ DOCUMENTS : has
+    CONTRACTS ||--o{ CONTRACT_EXPIRY_ALERTS : triggers
+    USERS ||--o{ CLAIMS : declares
+    USERS ||--o{ DOCUMENTS : uploads
+    USERS |o--o{ ACTIVITY_LOGS : performs
+
+    BROKERAGES {
+        bigint id PK
+        string name
+        char enterprise_number UK
+        string fsma_number
+    }
+    USERS {
+        bigint id PK
+        bigint brokerage_id FK
+        string email UK
+        string role
+    }
+    CLIENTS {
+        bigint id PK
+        bigint brokerage_id FK
+        bigint broker_id FK
+        bigint user_id FK
+        string type
+        char enterprise_number
+        text search_name
+        timestamp deleted_at
+    }
+    INSURERS {
+        bigint id PK
+        string name UK
+    }
+    CONTRACTS {
+        bigint id PK
+        bigint brokerage_id FK
+        bigint client_id FK
+        bigint insurer_id FK
+        string policy_number
+        string type
+        string status
+        date expires_on
+        int annual_premium_cents
+        timestamp deleted_at
+    }
+    CLAIMS {
+        bigint id PK
+        bigint brokerage_id FK
+        bigint contract_id FK
+        bigint declared_by FK
+        string reference
+        string status
+        int settled_amount_cents
+        timestamp closed_at
+    }
+    DOCUMENTS {
+        bigint id PK
+        bigint contract_id FK
+        bigint uploaded_by FK
+        string original_name
+        boolean visible_to_client
+    }
+    CONTRACT_EXPIRY_ALERTS {
+        bigint id PK
+        bigint contract_id FK
+        smallint threshold_days
+        date expires_on
+    }
+    ACTIVITY_LOGS {
+        bigint id PK
+        bigint brokerage_id FK
+        bigint user_id FK
+        string action
+        string subject_type
+        jsonb changes
+    }
 ```
 
-GitHub Actions runs linting, static analysis, tests and builds on every push, then boots the full stack with Docker Compose.
+## Tests
+
+```sh
+docker compose exec php composer test              # Pest, on PostgreSQL
+docker compose exec php composer analyse           # Larastan, level 6
+docker compose exec php composer format            # Pint
+docker compose exec broker npm test                # Vitest
+docker compose exec portal npm test                # Vitest
+docker compose --profile e2e run --rm e2e          # Playwright, across the whole stack
+```
+
+GitHub Actions runs linting, static analysis, dependency audits, tests and builds on every push, then boots the stack from a clean checkout and runs the browser tests against it.
+
+## Demo mode
+
+`DEMO_MODE=true` is the local default. It lists the demo accounts on the login pages and erases **all data** every night at 03:00, so people can try anything. Never enable it on real data.
+
+## What I'd do next
+
+- **Production images and a hosted demo.** Docker Compose currently runs the front ends' development servers, which is right for trying the project but not for hosting it.
+- **Portal invitations and password reset.** Only the seeded clients have a portal account today.
+- **Dutch.** Belgian brokers need both languages, and the interface would need translation files first.
+- **A content security policy,** and forwarding the real visitor address from Next.js to the API, so that login limits apply per visitor behind a trusted proxy.
+- **A searchable client field in forms,** which currently list the first 100 clients.
+- **Renewing a contract in one action,** rather than editing its dates.

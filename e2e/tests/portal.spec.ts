@@ -21,6 +21,11 @@ test('the public pages are made to be found', async ({ page, request }) => {
   const html = await (await request.get(PORTAL)).text()
   expect(html).toContain('Vos assurances, au même endroit')
 
+  const headers = (await request.get(PORTAL)).headers()
+  expect(headers['x-frame-options']).toBe('DENY')
+  expect(headers['x-content-type-options']).toBe('nosniff')
+  expect(headers['x-powered-by']).toBeUndefined()
+
   const robots = await (await request.get(`${PORTAL}/robots.txt`)).text()
   expect(robots).toContain('Disallow: /contracts')
 

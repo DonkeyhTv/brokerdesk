@@ -36,6 +36,11 @@ class VerifyCredentials
             throw new AuthorizationException('This account cannot sign in to this application.');
         }
 
+        // A deleted client keeps a user row, but no longer has anything to see.
+        if ($user->role === UserRole::Client && $user->clientProfile === null) {
+            throw new AuthorizationException('This account is no longer active.');
+        }
+
         return $user;
     }
 }
