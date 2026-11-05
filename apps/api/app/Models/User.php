@@ -70,6 +70,11 @@ class User extends Authenticatable
         };
     }
 
+    public function canSee(Client $client): bool
+    {
+        return $this->manages($client) || $this->isAccountOf($client);
+    }
+
     public function isAccountOf(Client $client): bool
     {
         return $this->id === $client->user_id;
