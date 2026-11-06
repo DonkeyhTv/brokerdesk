@@ -1,0 +1,27 @@
+# Production only: development runs "next dev" from docker-compose.yml.
+FROM node:24-slim AS build
+
+WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
+
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
+
+COPY . .
+# Both end up in the build: the first in the browser bundle, the second in prerendered metadata.
+ARG NEXT_PUBLIC_BACK_OFFICE_URL
+ARG PORTAL_URL
+ENV NEXT_PUBLIC_BACK_OFFICE_URL=$NEXT_PUBLIC_BACK_OFFICE_URL PORTAL_URL=$PORTAL_URL
+RUN npm run build
+
+FROM node:24-slim
+
+WORKDIR /app
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=3000
+
+COPY --from=build --chown=node:node /app/.next/standalone ./
+COPY --from=build --chown=node:node /app/.next/static ./.next/static
+
+USER node
+EXPOSE 3000
+CMD ["node", "server.js"]

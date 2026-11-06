@@ -1,0 +1,124 @@
+# The production stack: run "docker compose up -d --build" in this folder, after filling in .env.
+# Only Caddy is reachable from outside. It obtains HTTPS certificates and serves both host names.
+name: brokerdesk-prod
+
+x-api: &api
+  build:
+    context: ../apps/api
+    target: prod
+  restart: unless-stopped
+  environment:
+    APP_ENV: production
+    APP_DEBUG: "false"
+    APP_KEY: ${APP_KEY:?Set APP_KEY in .env}
+    APP_URL: https://${BROKER_DOMAIN:?Set BROKER_DOMAIN in .env}
+    LOG_CHANNEL: stderr
+    LOG_LEVEL: info
+    DB_CONNECTION: pgsql
+    DB_HOST: db
+    DB_DATABASE: brokerdesk
+    DB_USERNAME: brokerdesk
+    DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    SESSION_SECURE_COOKIE: "true"
+    SANCTUM_STATEFUL_DOMAINS: ${BROKER_DOMAIN}
+    # Caddy is the only way in, so the direct caller is always a trusted proxy.
+    TRUSTED_PROXIES: "*"
+    # Mail stays inside the stack: the demo addresses are fictional.
+    MAIL_MAILER: smtp
+    MAIL_HOST: mailpit
+    MAIL_PORT: 1025
+    MAIL_FROM_ADDRESS: no-reply@example.be
+    DEMO_MODE: ${DEMO_MODE:-false}
+  volumes:
+    - api_storage:/app/storage/app
+  depends_on:
+    setup:
+      condition: service_completed_successfully
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: brokerdesk
+      POSTGRES_USER: brokerdesk
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U brokerdesk -d brokerdesk"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  setup:
+    <<: *api
+    restart: "no"
+    command: sh -c "php artisan migrate --force && php artisan demo:seed"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  php:
+    <<: *api
+
+  worker:
+    <<: *api
+    command: php artisan queue:work --tries=3
+
+  scheduler:
+    <<: *api
+    command: php artisan schedule:work
+
+  web:
+    build:
+      context: ../apps/api
+      target: web
+    restart: unless-stopped
+    depends_on:
+      - php
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+
+  portal:
+    build:
+      context: ../apps/portal
+      args:
+        PORTAL_URL: https://${PORTAL_DOMAIN:?Set PORTAL_DOMAIN in .env}
+        NEXT_PUBLIC_BACK_OFFICE_URL: https://${BROKER_DOMAIN}
+    restart: unless-stopped
+    environment:
+      API_URL: http://web
+      PORTAL_URL: https://${PORTAL_DOMAIN}
+    depends_on:
+      - web
+
+  caddy:
+    build:
+      context: ../apps/broker
+      args:
+        VITE_PORTAL_URL: https://${PORTAL_DOMAIN}
+    restart: unless-stopped
+    environment:
+      BROKER_DOMAIN: ${BROKER_DOMAIN}
+      PORTAL_DOMAIN: ${PORTAL_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in .env}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT:-443}:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+      - portal
+
+volumes:
+  db_data:
+  api_storage:
+  caddy_data:
+  caddy_config:
