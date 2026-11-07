@@ -1,0 +1,10 @@
+# For a server whose own web server already owns ports 80 and 443 and handles HTTPS, such as nginx with certbot.
+# Caddy then listens in plain HTTP on the loopback interface only, and trusts that server's X-Forwarded-* headers.
+# nginx-host.conf.example shows the matching nginx configuration.
+services:
+  caddy:
+    environment:
+      SITE_SCHEME: http
+      CADDY_TRUSTED_PROXIES: private_ranges
+    ports: !override
+      - "127.0.0.1:${PROXY_PORT:-8090}:80"

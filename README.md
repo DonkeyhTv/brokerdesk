@@ -189,6 +189,8 @@ docker compose up -d --build
 
 The first start migrates the database and, in demo mode, loads the demo data. To update the server, pull and run the last command again.
 
+If the server already runs a web server on ports 80 and 443, such as nginx with certbot, uncomment `COMPOSE_FILE` in `.env`. Caddy then listens in plain HTTP on `127.0.0.1:8090` only, and the existing web server handles HTTPS and forwards both host names to it, as in [`nginx-host.conf.example`](deploy/nginx-host.conf.example).
+
 ## What I'd do next
 
 - **A hosted demo.** The production stack is ready, and it needs a server and two DNS names.
