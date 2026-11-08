@@ -21,4 +21,5 @@ onUnauthenticated(() => {
   }
 })
 
-app.mount('#app')
+// The first navigation checks the session: mounting before it ends would flash the signed-in layout to visitors.
+void router.isReady().then(() => app.mount('#app'))
