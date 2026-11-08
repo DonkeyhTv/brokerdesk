@@ -21,6 +21,10 @@ const links = computed(() => [
         { to: { name: 'activity' }, label: 'Journal', section: 'activity' },
       ]
     : []),
+  // Only for people evaluating the demo, who sign in with its shared accounts.
+  ...(auth.user?.is_demo_account
+    ? [{ to: { name: 'about' }, label: 'Comment c’est construit', section: 'about' }]
+    : []),
 ])
 
 function isActive(section: string): boolean {

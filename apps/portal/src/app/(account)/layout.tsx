@@ -59,6 +59,14 @@ export default async function AccountLayout({
 
       <footer className="px-4 py-6 text-center text-xs text-slate-500">
         Votre courtier : {user.brokerage.name}
+        {user.is_demo_account && (
+          <>
+            {" · "}
+            <Link href="/a-propos" className="link">
+              Comment c&apos;est construit
+            </Link>
+          </>
+        )}
       </footer>
     </div>
   );

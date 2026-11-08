@@ -6,6 +6,8 @@ import type { DemoAccounts } from '@/api/types'
 import { useAuthStore } from '@/stores/auth'
 import AlertMessage from '@/components/AlertMessage.vue'
 import FormField from '@/components/FormField.vue'
+import TechStack from '@/components/TechStack.vue'
+import { SOURCE_URL } from '@/utils/stack'
 
 const PORTAL_URL = import.meta.env.VITE_PORTAL_URL ?? 'http://localhost:3000'
 
@@ -135,6 +137,16 @@ function useAccount(accountEmail: string): void {
           </button>
           <a :href="PORTAL_URL" class="btn-secondary">Portail client →</a>
         </div>
+      </section>
+
+      <section v-if="demo" class="card mt-4 p-5" aria-labelledby="stack-title">
+        <h2 id="stack-title" class="mb-3 text-sm font-semibold text-slate-900">
+          Comment c'est construit
+        </h2>
+        <TechStack current="broker" compact />
+        <a :href="SOURCE_URL" class="link mt-4 inline-block text-sm" rel="noopener">
+          Code source sur GitHub →
+        </a>
       </section>
     </div>
   </main>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { LoginForm } from "@/components/LoginForm";
 import { Logo } from "@/components/Logo";
+import { TechStack } from "@/components/TechStack";
 import { demoAccounts } from "@/lib/api";
 
 export const metadata: Metadata = {
@@ -29,6 +30,20 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
             expired ? "Votre session a expiré : reconnectez-vous." : undefined
           }
         />
+        {demo && (
+          <section aria-labelledby="stack-title" className="card mt-4 p-5">
+            <h2
+              id="stack-title"
+              className="mb-3 text-sm font-semibold text-slate-900"
+            >
+              Comment c&apos;est construit
+            </h2>
+            <TechStack current="portal" compact />
+            <Link href="/a-propos" className="link mt-4 inline-block text-sm">
+              Voir les choix techniques →
+            </Link>
+          </section>
+        )}
       </div>
     </main>
   );

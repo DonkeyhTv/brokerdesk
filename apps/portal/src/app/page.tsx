@@ -65,7 +65,10 @@ export default function Home() {
 
       <footer className="border-t border-slate-200 px-4 py-6 text-center text-xs text-slate-500">
         BrokerDesk est un projet de démonstration : les cabinets, les assureurs
-        et les données sont fictifs.
+        et les données sont fictifs.{" "}
+        <Link href="/a-propos" className="link">
+          Comment c&apos;est construit
+        </Link>
       </footer>
     </div>
   );

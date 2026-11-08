@@ -130,6 +130,17 @@ describe('LoginView', () => {
     })
   })
 
+  it('shows how the application is built, in demo mode', async () => {
+    respond(() => ({}))
+    const wrapper = await mountLogin()
+
+    const stack = wrapper.get('[aria-labelledby="stack-title"]')
+    expect(stack.text()).toContain('Laravel 13')
+    expect(stack.text()).toContain('Next.js 16')
+    expect(stack.text()).toContain('vous êtes ici')
+    expect(stack.get('a').attributes('href')).toBe('https://github.com/DonkeyhTv/brokerdesk')
+  })
+
   it('offers nothing when demo mode is off', async () => {
     respond(() => ({}), null)
     const wrapper = await mountLogin()

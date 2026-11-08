@@ -205,3 +205,20 @@ test('takes the README screenshots', async ({ page }) => {
   await expect(page.getByText(/a (créé|modifié)/).first()).toBeVisible()
   await shot('back-office-activity')
 })
+
+test('evaluators see how the application is built, from the login page and from the menu', async ({
+  page,
+}) => {
+  await page.goto('/login')
+  await expect(page.getByRole('region', { name: "Comment c'est construit" })).toContainText(
+    'Laravel 13',
+  )
+
+  await signInToBackOffice(page, 'Courtier')
+  await page.getByRole('link', { name: 'Comment c’est construit' }).click()
+  await expect(page.getByRole('heading', { name: "Comment c'est construit" })).toBeVisible()
+  await expect(page.getByText('Chaque cabinet est isolé deux fois')).toBeVisible()
+
+  const docs = await page.request.get('/docs/api')
+  expect(docs.ok()).toBe(true)
+})

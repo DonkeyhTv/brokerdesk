@@ -17,6 +17,7 @@ export interface User {
   role: "admin" | "broker" | "client";
   brokerage: NamedRef;
   client_id: number | null;
+  is_demo_account: boolean;
 }
 
 export interface Contract {

@@ -18,6 +18,7 @@ export default defineConfig({
     proxy: {
       '/api': apiTarget,
       '/sanctum': apiTarget,
+      '/docs': apiTarget,
     },
     watch: {
       usePolling: process.env.VITE_USE_POLLING === 'true',

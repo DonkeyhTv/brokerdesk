@@ -169,3 +169,22 @@ test('takes the portal screenshots', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Mes sinistres' })).toBeVisible()
   await shot('portal-claims')
 })
+
+test('evaluators see how the application is built, from the login page and from their account', async ({
+  page,
+}) => {
+  await page.goto(`${PORTAL}/login`)
+  await expect(page.getByRole('region', { name: "Comment c'est construit" })).toContainText(
+    'Next.js 16',
+  )
+
+  await signIn(page, 'Client particulier')
+  await page.getByRole('contentinfo').getByRole('link', { name: "Comment c'est construit" }).click()
+  await expect(
+    page.getByRole('heading', { level: 1, name: "Comment c'est construit" }),
+  ).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Code source sur GitHub' })).toHaveAttribute(
+    'href',
+    'https://github.com/DonkeyhTv/brokerdesk',
+  )
+})

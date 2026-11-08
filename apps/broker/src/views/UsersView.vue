@@ -157,7 +157,7 @@ async function remove(user: User): Promise<void> {
             <td class="table-cell text-right whitespace-nowrap">
               <span
                 v-if="user.is_demo_account"
-                class="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700"
+                class="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700"
                 title="Partagé par tous les visiteurs de la démo : il ne peut être ni modifié ni retiré."
               >
                 Compte de démo
