@@ -45,6 +45,7 @@ export interface Contract {
   starts_on: string
   expires_on: string
   notice_deadline: string
+  is_renewable: boolean
   annual_premium_cents: number
   payment_frequency: PaymentFrequency
   client?: NamedRef

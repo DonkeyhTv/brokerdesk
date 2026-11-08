@@ -236,3 +236,23 @@ test('evaluators see how the application is built, from the login page and from 
   const docs = await page.request.get('/docs/api')
   expect(docs.ok()).toBe(true)
 })
+
+test('a broker renews a contract that expires soon, with an indexed premium', async ({ page }) => {
+  await signInToBackOffice(page, 'Courtier')
+
+  await page.getByRole('link', { name: 'Contrats', exact: true }).click()
+  await page.getByLabel('Filtrer par échéance').selectOption('30')
+  await page.locator('tbody tr a').first().click()
+
+  await page.getByRole('button', { name: 'Renouveler' }).click()
+  const form = page.getByRole('form', { name: /Renouveler jusqu'au/ })
+  const newExpiry = (await form.getByRole('heading').textContent())?.match(
+    /\d{2}\/\d{2}\/\d{4}/,
+  )?.[0]
+  await form.getByLabel('Prime annuelle du nouveau terme').fill('999,90')
+  await form.getByRole('button', { name: 'Confirmer le renouvellement' }).click()
+
+  await expect(page.getByText(`Contrat renouvelé jusqu'au ${newExpiry}.`)).toBeVisible()
+  await expect(page.getByText(/999,90/)).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Renouveler' })).toHaveCount(0)
+})

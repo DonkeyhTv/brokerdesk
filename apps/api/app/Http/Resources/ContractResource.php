@@ -24,6 +24,7 @@ class ContractResource extends JsonResource
             'starts_on' => $this->starts_on->toDateString(),
             'expires_on' => $this->expires_on->toDateString(),
             'notice_deadline' => $this->noticeDeadline()->toDateString(),
+            'is_renewable' => $this->isRenewable(),
             'annual_premium_cents' => $this->annual_premium_cents,
             'payment_frequency' => $this->payment_frequency,
             'client' => $this->whenLoaded('client', fn () => ['id' => $this->client->id, 'name' => $this->client->displayName()]),

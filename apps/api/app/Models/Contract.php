@@ -34,6 +34,11 @@ class Contract extends Model implements Auditable
     use HasFactory, SoftDeletes;
 
     /**
+     * Renewal opens with the first expiry alert, 90 days before the contract expires.
+     */
+    public const int RENEWAL_WINDOW_DAYS = 90;
+
+    /**
      * @return BelongsTo<Brokerage, $this>
      */
     public function brokerage(): BelongsTo
@@ -89,6 +94,19 @@ class Contract extends Model implements Auditable
     public function noticeDeadline(): CarbonImmutable
     {
         return $this->expires_on->subMonthsNoOverflow(3);
+    }
+
+    /**
+     * Active or lapsed contracts renew from the renewal window on, as long as
+     * the next term has not ended already.
+     */
+    public function isRenewable(): bool
+    {
+        $today = CarbonImmutable::today();
+
+        return in_array($this->status, [ContractStatus::Active, ContractStatus::Expired], true)
+            && $this->expires_on->lte($today->addDays(self::RENEWAL_WINDOW_DAYS))
+            && $this->expires_on->addYearNoOverflow()->gt($today);
     }
 
     /**

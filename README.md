@@ -42,7 +42,7 @@ All data is fictional, except for real Belgian communes and postal codes. The in
 
 - **Roles:** an admin sees the whole brokerage and manages its team, a broker sees their own portfolio, and a client sees only their own records.
 - **Clients, contracts and claims:** create, edit and delete, with search that ignores accents, filters, sorting and pagination.
-- **Renewals:** a daily job alerts brokers at 90, 60 and 30 days before expiry, in the app and by mail. Belgian contracts renew tacitly unless cancelled three months ahead, so the alerts state that deadline.
+- **Renewals:** a daily job alerts brokers at 90, 60 and 30 days before expiry, in the app and by mail. Belgian contracts renew tacitly unless cancelled three months ahead, so the alerts state that deadline. From the first alert on, a contract renews for one year in one action, with the indexed premium if the insurer changed it.
 - **Documents:** private PDF storage per contract, and brokers choose what clients can see.
 - **Claims:** clients declare them in the portal, and brokers follow them up until they are settled or rejected.
 - **Traceability:** an activity log records who changed what and when, and contracts export to CSV.
@@ -200,5 +200,3 @@ If the server already runs a web server on ports 80 and 443, such as nginx with 
 - **Portal invitations and password reset.** Only the seeded clients have a portal account today.
 - **Dutch.** Belgian brokers need both languages, and the interface would need translation files first.
 - **A content security policy,** and forwarding the visitor's address from Next.js to the API. The back office already reaches the API with the real address, but portal logins share the address of the portal server.
-- **A searchable client field in forms,** which currently list the first 100 clients.
-- **Renewing a contract in one action,** rather than editing its dates.

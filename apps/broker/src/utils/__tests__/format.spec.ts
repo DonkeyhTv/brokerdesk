@@ -6,6 +6,7 @@ import {
   formatDate,
   formatFileSize,
   formatMoney,
+  oneYearAfter,
 } from '../format'
 
 describe('eurosToCents', () => {
@@ -51,5 +52,15 @@ describe('formatting', () => {
   it('shows readable file sizes', () => {
     expect(formatFileSize(2048)).toBe('2 Ko')
     expect(formatFileSize(2.5 * 1024 * 1024)).toBe('2,5 Mo')
+  })
+})
+
+describe('oneYearAfter', () => {
+  it.each([
+    ['2026-11-30', '2027-11-30'],
+    ['2028-02-29', '2029-02-28'],
+    ['2026-01-05', '2027-01-05'],
+  ])('moves %s to %s, like the API', (date, expected) => {
+    expect(oneYearAfter(date)).toBe(expected)
   })
 })

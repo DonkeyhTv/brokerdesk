@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\ClaimController;
 use App\Http\Controllers\Api\V1\ClientController;
 use App\Http\Controllers\Api\V1\ContractController;
 use App\Http\Controllers\Api\V1\ContractExportController;
+use App\Http\Controllers\Api\V1\ContractRenewalController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DemoAccountController;
 use App\Http\Controllers\Api\V1\DocumentController;
@@ -56,6 +57,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/contracts/{contract}', [ContractController::class, 'show'])->can('view', 'contract');
     Route::put('/contracts/{contract}', [ContractController::class, 'update']);
     Route::delete('/contracts/{contract}', [ContractController::class, 'destroy'])->can('delete', 'contract');
+    Route::post('/contracts/{contract}/renewal', ContractRenewalController::class);
 
     Route::get('/contracts/{contract}/documents', [DocumentController::class, 'index'])->can('viewAny', [Document::class, 'contract']);
     Route::post('/contracts/{contract}/documents', [DocumentController::class, 'store']);

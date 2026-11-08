@@ -3,10 +3,19 @@ import { computed, onMounted, ref, shallowRef } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { api, ApiError, buildUrl } from '@/api/http'
 import type { Claim, Contract, ContractDocument, Paginated, Resource } from '@/api/types'
-import { daysUntil, formatDate, formatFileSize, formatMoney } from '@/utils/format'
+import {
+  centsToEuros,
+  daysUntil,
+  eurosToCents,
+  formatDate,
+  formatFileSize,
+  formatMoney,
+  oneYearAfter,
+} from '@/utils/format'
 import { CONTRACT_TYPES, PAYMENT_FREQUENCIES } from '@/utils/labels'
 import AlertMessage from '@/components/AlertMessage.vue'
 import DetailItem from '@/components/DetailItem.vue'
+import FormField from '@/components/FormField.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 
@@ -21,6 +30,11 @@ const uploadError = ref<string | null>(null)
 const isUploading = ref(false)
 const visibleToClient = ref(true)
 const fileInput = ref<HTMLInputElement | null>(null)
+
+const isRenewing = ref(false)
+const renewalPremium = ref('')
+const renewalErrors = ref<Record<string, string[]>>({})
+const renewed = ref<string | null>(null)
 
 const noticeHasPassed = computed(
   () => contract.value?.status === 'active' && daysUntil(contract.value.notice_deadline) < 0,
@@ -99,6 +113,43 @@ async function removeDocument(document: ContractDocument): Promise<void> {
   }
 }
 
+function openRenewal(): void {
+  renewalPremium.value = centsToEuros(contract.value?.annual_premium_cents)
+  renewalErrors.value = {}
+  renewed.value = null
+  isRenewing.value = true
+}
+
+async function renew(): Promise<void> {
+  const cents = eurosToCents(renewalPremium.value)
+
+  if (cents === null) {
+    renewalErrors.value = { annual_premium_cents: ['Indiquez un montant en euros.'] }
+    return
+  }
+
+  try {
+    const { data } = await api<Resource<Contract>>(`/contracts/${props.id}/renewal`, {
+      method: 'POST',
+      body: { annual_premium_cents: cents },
+    })
+
+    contract.value = data
+    isRenewing.value = false
+    renewed.value = `Contrat renouvelé jusqu'au ${formatDate(data.expires_on)}.`
+  } catch (caught) {
+    if (caught instanceof ApiError && caught.status === 422) {
+      renewalErrors.value = caught.errors
+    } else {
+      error.value =
+        caught instanceof ApiError && caught.status === 409
+          ? 'Ce contrat ne peut plus être renouvelé.'
+          : 'Le renouvellement a échoué.'
+      isRenewing.value = false
+    }
+  }
+}
+
 async function remove(): Promise<void> {
   if (!window.confirm('Supprimer ce contrat ?')) {
     return
@@ -124,6 +175,14 @@ async function remove(): Promise<void> {
       :title="contract.policy_number"
       :subtitle="`${CONTRACT_TYPES[contract.type]} · ${contract.client?.name}`"
     >
+      <button
+        v-if="contract.is_renewable && !isRenewing"
+        type="button"
+        class="btn-primary"
+        @click="openRenewal"
+      >
+        Renouveler
+      </button>
       <RouterLink
         :to="{ name: 'contract-edit', params: { id: contract.id } }"
         class="btn-secondary"
@@ -132,6 +191,43 @@ async function remove(): Promise<void> {
       </RouterLink>
       <button type="button" class="btn-danger" @click="remove">Supprimer</button>
     </PageHeader>
+
+    <AlertMessage :message="renewed" tone="success" />
+
+    <form
+      v-if="isRenewing"
+      class="card mb-6 space-y-4 p-5"
+      aria-labelledby="renewal-title"
+      novalidate
+      @submit.prevent="renew"
+    >
+      <div>
+        <h2 id="renewal-title" class="text-base font-semibold text-slate-900">
+          Renouveler jusqu'au {{ formatDate(oneYearAfter(contract.expires_on)) }}
+        </h2>
+        <p class="mt-1 text-sm text-slate-500">
+          Le contrat repart pour un an à partir de son échéance, et les alertes reprennent pour la
+          nouvelle date.
+        </p>
+      </div>
+      <FormField
+        label="Prime annuelle du nouveau terme"
+        name="annual_premium_cents"
+        :errors="renewalErrors"
+        hint="À adapter si l'assureur indexe la prime."
+      >
+        <input
+          id="annual_premium_cents"
+          v-model="renewalPremium"
+          class="input max-w-48"
+          inputmode="decimal"
+        />
+      </FormField>
+      <div class="flex gap-2">
+        <button type="submit" class="btn-primary">Confirmer le renouvellement</button>
+        <button type="button" class="btn-secondary" @click="isRenewing = false">Annuler</button>
+      </div>
+    </form>
 
     <dl class="card grid gap-5 p-5 sm:grid-cols-2 lg:grid-cols-4">
       <DetailItem label="Statut"><StatusBadge :status="contract.status" /></DetailItem>

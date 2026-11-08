@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class NotifyExpiringContracts
 {
-    private const array THRESHOLDS = [30, 60, 90];
+    private const array THRESHOLDS = [30, 60, Contract::RENEWAL_WINDOW_DAYS];
 
     /**
      * Alert brokers once per contract and threshold. A renewed contract has a

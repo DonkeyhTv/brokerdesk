@@ -55,3 +55,13 @@ export function eurosToCents(value: string): number | null {
 export function centsToEuros(cents: number | null | undefined): string {
   return cents === null || cents === undefined ? '' : (cents / 100).toFixed(2).replace('.', ',')
 }
+
+/** The same day one year later, like the API: 29 February becomes 28 February. */
+export function oneYearAfter(date: string): string {
+  const [year = 0, month = 1, day = 1] = date.split('-').map(Number)
+  const lastDay = new Date(Date.UTC(year + 1, month, 0)).getUTCDate()
+
+  return [year + 1, month, Math.min(day, lastDay)]
+    .map((part, index) => String(part).padStart(index === 0 ? 4 : 2, '0'))
+    .join('-')
+}
