@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\Client;
 use App\Models\User;
 use App\Policies\Concerns\ConcealsRecords;
+use App\Support\DemoAccounts;
 use Illuminate\Auth\Access\Response;
 
 class ClientPolicy
@@ -33,6 +34,12 @@ class ClientPolicy
 
     public function delete(User $user, Client $client): Response
     {
-        return $this->conceal($user->canSee($client), $user->manages($client));
+        $response = $this->conceal($user->canSee($client), $user->manages($client));
+
+        if ($response->allowed() && DemoAccounts::protects($client->user)) {
+            return Response::deny('This client signs in with a demo account, so that every visitor can use the portal.');
+        }
+
+        return $response;
     }
 }

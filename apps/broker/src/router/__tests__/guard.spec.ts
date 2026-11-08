@@ -27,6 +27,7 @@ function signIn(role: 'admin' | 'broker'): void {
     role,
     brokerage: { id: 1, name: 'x' },
     client_id: null,
+    is_demo_account: false,
   }
 }
 

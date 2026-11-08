@@ -152,6 +152,10 @@ test('an admin manages the team and reads the activity log', async ({ page }) =>
   await expect(page.getByText('Tout le cabinet Cabinet Démo Meuse')).toBeVisible()
 
   await page.getByRole('link', { name: 'Équipe' }).click()
+  const demoBroker = page.getByRole('row', { name: /Demo Broker/ })
+  await expect(demoBroker.getByText('Compte de démo')).toBeVisible()
+  await expect(demoBroker.getByRole('button')).toHaveCount(0)
+
   await page.getByRole('button', { name: 'Ajouter un membre' }).click()
   await page.getByLabel('Nom').fill(`Nora ${suffix}`)
   await page.getByLabel('E-mail').fill(`nora.${suffix}@example.be`)

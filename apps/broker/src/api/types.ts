@@ -17,6 +17,7 @@ export interface User {
   role: UserRole
   brokerage: NamedRef
   client_id: number | null
+  is_demo_account: boolean
 }
 
 export interface Client {

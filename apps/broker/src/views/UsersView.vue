@@ -155,15 +155,24 @@ async function remove(user: User): Promise<void> {
             <td class="table-cell">{{ user.email }}</td>
             <td class="table-cell">{{ USER_ROLES[user.role] }}</td>
             <td class="table-cell text-right whitespace-nowrap">
-              <button type="button" class="link mr-3" @click="openEdit(user)">Modifier</button>
-              <button
-                v-if="user.id !== auth.user?.id"
-                type="button"
-                class="font-medium text-red-700 hover:underline"
-                @click="remove(user)"
+              <span
+                v-if="user.is_demo_account"
+                class="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700"
+                title="Partagé par tous les visiteurs de la démo : il ne peut être ni modifié ni retiré."
               >
-                Retirer
-              </button>
+                Compte de démo
+              </span>
+              <template v-else>
+                <button type="button" class="link mr-3" @click="openEdit(user)">Modifier</button>
+                <button
+                  v-if="user.id !== auth.user?.id"
+                  type="button"
+                  class="font-medium text-red-700 hover:underline"
+                  @click="remove(user)"
+                >
+                  Retirer
+                </button>
+              </template>
             </td>
           </tr>
         </tbody>

@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Enums\UserRole;
 use App\Models\User;
 use App\Policies\Concerns\ConcealsRecords;
+use App\Support\DemoAccounts;
 use Illuminate\Auth\Access\Response;
 
 /**
@@ -31,12 +32,21 @@ class UserPolicy
 
     public function update(User $user, User $target): Response
     {
-        return $this->conceal($this->isManagedBy($target, $user));
+        return $this->unlessDemoAccount($target, $this->conceal($this->isManagedBy($target, $user)));
     }
 
     public function delete(User $user, User $target): Response
     {
-        return $this->conceal($this->isManagedBy($target, $user), $user->id !== $target->id);
+        return $this->unlessDemoAccount($target, $this->conceal($this->isManagedBy($target, $user), $user->id !== $target->id));
+    }
+
+    private function unlessDemoAccount(User $target, Response $response): Response
+    {
+        if ($response->allowed() && DemoAccounts::protects($target)) {
+            return Response::deny('Demo accounts cannot be changed, so that every visitor can sign in.');
+        }
+
+        return $response;
     }
 
     private function isManagedBy(User $target, User $admin): bool

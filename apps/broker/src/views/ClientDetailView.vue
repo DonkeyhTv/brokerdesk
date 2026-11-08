@@ -48,7 +48,9 @@ async function remove(): Promise<void> {
     error.value =
       caught instanceof ApiError && caught.status === 409
         ? 'Ce client a encore des contrats actifs : il ne peut pas être supprimé.'
-        : 'La suppression a échoué.'
+        : caught instanceof ApiError && caught.status === 403
+          ? 'Ce client se connecte au portail avec un compte de démo : il est conservé pour les visiteurs suivants.'
+          : 'La suppression a échoué.'
   }
 }
 </script>

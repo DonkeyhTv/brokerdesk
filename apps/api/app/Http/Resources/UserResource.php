@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\User;
+use App\Support\DemoAccounts;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -26,6 +27,8 @@ class UserResource extends JsonResource
                 'name' => $this->brokerage->name,
             ],
             'client_id' => $this->clientProfile?->id,
+            // Shared by every visitor in demo mode, so it cannot be changed or removed.
+            'is_demo_account' => DemoAccounts::protects($this->resource),
         ];
     }
 }
