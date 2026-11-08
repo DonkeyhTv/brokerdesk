@@ -52,6 +52,7 @@ return [
 
     'attributes' => [
         'annual_premium_cents' => 'jaarpremie',
+        'broker_id' => 'verantwoordelijke makelaar',
         'city' => 'gemeente',
         'client_id' => 'klant',
         'company_name' => 'bedrijfsnaam',

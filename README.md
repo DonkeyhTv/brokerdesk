@@ -45,6 +45,7 @@ All data is fictional, except for real Belgian communes and postal codes. The in
 - **Renewals:** a daily job alerts brokers at 90, 60 and 30 days before expiry, in the app and by mail. Belgian contracts renew tacitly unless cancelled three months ahead, so the alerts state that deadline. From the first alert on, a contract renews for one year in one action, with the indexed premium if the insurer changed it.
 - **Documents:** private PDF storage per contract, and brokers choose what clients can see.
 - **Claims:** clients declare them in the portal, and brokers follow them up until they are settled or rejected.
+- **Portal access:** brokers invite a client from their page, the client chooses a password from the link and lands in the portal, and forgotten passwords reset by mail. In demo mode, the invitation link also shows on screen, since demo mails stay on the server.
 - **Traceability:** an activity log records who changed what and when, and contracts export to CSV.
 - **French and Dutch:** both interfaces follow the browser's language until people choose, the API answers in it, validation messages included, and expiry alerts reach each broker in the language they last used.
 
@@ -200,4 +201,6 @@ If the server already runs a web server on ports 80 and 443, such as nginx with 
 
 ## What I'd do next
 
-- **Portal invitations and password reset.** Only the seeded clients have a portal account today.
+- **Password reset for staff.** Admins set their team's passwords today; brokers could reset their own, as clients do.
+- **Two-factor sign-in for staff,** who see a whole portfolio.
+- **An accessibility audit with a screen reader.** The interfaces use labelled regions, live messages and keyboard-friendly controls, but nobody has tried them with a screen reader yet.

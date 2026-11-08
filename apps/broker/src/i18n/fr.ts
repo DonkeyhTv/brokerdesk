@@ -165,6 +165,18 @@ export const fr = {
     postalCode: 'Code postal',
     responsibleBroker: 'Courtier responsable',
     chooseBroker: 'Choisir un courtier',
+    portal: {
+      title: 'Espace client',
+      none: 'Ce client n’a pas encore accès au portail.',
+      invite: 'Inviter au portail',
+      invited: (date: string) =>
+        `Invitation envoyée le ${date} : elle attend que le client choisisse son mot de passe.`,
+      resend: 'Renvoyer l’invitation',
+      active: 'Ce client se connecte au portail.',
+      sent: (email: string) => `Invitation envoyée à ${email}.`,
+      demoLink: 'Mode démo : les mails ne quittent pas le serveur. Ouvrez l’invitation ici :',
+      failed: 'L’invitation n’a pas pu être envoyée.',
+    },
   },
   contracts: {
     title: 'Contrats',

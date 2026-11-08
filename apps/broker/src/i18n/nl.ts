@@ -165,6 +165,18 @@ export const nl: Messages = {
     postalCode: 'Postcode',
     responsibleBroker: 'Verantwoordelijke makelaar',
     chooseBroker: 'Kies een makelaar',
+    portal: {
+      title: 'Klantenomgeving',
+      none: 'Deze klant heeft nog geen toegang tot het portaal.',
+      invite: 'Uitnodigen op het portaal',
+      invited: (date: string) =>
+        `Uitnodiging verzonden op ${date}: ze wacht tot de klant een wachtwoord kiest.`,
+      resend: 'Uitnodiging opnieuw verzenden',
+      active: 'Deze klant meldt zich aan op het portaal.',
+      sent: (email: string) => `Uitnodiging verzonden naar ${email}.`,
+      demoLink: 'Demomodus: de e-mails verlaten de server niet. Open de uitnodiging hier:',
+      failed: 'De uitnodiging kon niet worden verzonden.',
+    },
   },
   contracts: {
     title: 'Contracten',

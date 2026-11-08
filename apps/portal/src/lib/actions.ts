@@ -14,6 +14,19 @@ const ONE_YEAR_IN_SECONDS = 60 * 60 * 24 * 365;
 export interface FormState {
   message?: string;
   errors?: Record<string, string[]>;
+  /** Set once the request went through, for forms that stay on screen. */
+  done?: boolean;
+}
+
+/** The portal token stays in an httpOnly cookie, out of reach of scripts. */
+async function startSession(token: string): Promise<void> {
+  (await cookies()).set(SESSION_COOKIE, token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: ONE_WEEK_IN_SECONDS,
+  });
 }
 
 export async function login(
@@ -52,16 +65,110 @@ export async function login(
   }
 
   const { token } = await response.json();
-
-  (await cookies()).set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: ONE_WEEK_IN_SECONDS,
-  });
+  await startSession(token);
 
   redirect("/contracts");
+}
+
+/** Sends a chosen password with the token of its link, and reads the API's answer. */
+async function choosePassword(
+  path: string,
+  formData: FormData,
+): Promise<{ response: Response | null; state: FormState }> {
+  const response = await apiFetch(path, {
+    method: "POST",
+    body: JSON.stringify({
+      email: formData.get("email"),
+      token: formData.get("token"),
+      password: formData.get("password"),
+      password_confirmation: formData.get("password_confirmation"),
+    }),
+  }).catch(() => null);
+  const { password: t, login } = await getMessages();
+
+  if (response === null) {
+    return { response, state: { message: login.unavailable } };
+  }
+
+  if (response.status === 422) {
+    const { errors = {} } = await response.json();
+    // A bad link is not a field to fix: say it above the form.
+    const { token, email, ...fields } = errors as Record<string, string[]>;
+
+    return {
+      response,
+      state: { message: token?.[0] ?? email?.[0], errors: fields },
+    };
+  }
+
+  if (response.status === 429) {
+    return { response, state: { message: login.tooManyAttempts } };
+  }
+
+  return response.ok
+    ? { response, state: {} }
+    : { response, state: { message: t.failed } };
+}
+
+export async function acceptInvitation(
+  _previous: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const { response, state } = await choosePassword(
+    "/auth/invitation",
+    formData,
+  );
+
+  if (!response?.ok) {
+    return state;
+  }
+
+  const { token } = await response.json();
+  await startSession(token);
+
+  redirect("/contracts");
+}
+
+export async function resetPassword(
+  _previous: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const { response, state } = await choosePassword(
+    "/auth/reset-password",
+    formData,
+  );
+
+  if (!response?.ok) {
+    return state;
+  }
+
+  redirect("/login?reset=1");
+}
+
+export async function requestPasswordReset(
+  _previous: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const response = await apiFetch("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email: formData.get("email") }),
+  }).catch(() => null);
+  const { login } = await getMessages();
+
+  if (response === null) {
+    return { message: login.unavailable };
+  }
+
+  if (response.status === 422) {
+    return { errors: (await response.json()).errors };
+  }
+
+  if (response.status === 429) {
+    return { message: login.tooManyAttempts };
+  }
+
+  // The same answer whether or not an account exists: the API decides who gets a mail.
+  return { done: true };
 }
 
 export async function logout(): Promise<void> {

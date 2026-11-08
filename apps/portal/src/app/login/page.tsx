@@ -18,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
-  const { expired } = await searchParams;
+  const { expired, reset } = await searchParams;
   const [demo, t] = await Promise.all([demoAccounts(), getMessages()]);
 
   return (
@@ -30,6 +30,14 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           </Link>
           <LocaleSwitcher />
         </div>
+        {reset && (
+          <p
+            role="status"
+            className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+          >
+            {t.login.resetDone}
+          </p>
+        )}
         <LoginForm demo={demo} notice={expired ? t.login.expired : undefined} />
         {demo && (
           <section aria-labelledby="stack-title" className="card mt-4 p-5">

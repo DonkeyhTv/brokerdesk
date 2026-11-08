@@ -99,6 +99,14 @@ return [
             'expire' => 60,
             'throttle' => 60,
         ],
+
+        // Portal invitations: same mechanism, but the link waits a week for the client.
+        'invitations' => [
+            'provider' => 'users',
+            'table' => 'portal_invitation_tokens',
+            'expire' => 60 * 24 * 7,
+            'throttle' => 0,
+        ],
     ],
 
     /*

@@ -3,7 +3,7 @@ import { onMounted, ref, shallowRef } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { api, ApiError } from '@/api/http'
 import type { Client, Contract, Paginated, Resource } from '@/api/types'
-import { formatDate, formatMoney } from '@/utils/format'
+import { formatDate, formatDateTime, formatMoney } from '@/utils/format'
 import { t } from '@/i18n'
 import AlertMessage from '@/components/AlertMessage.vue'
 import DetailItem from '@/components/DetailItem.vue'
@@ -16,6 +16,8 @@ const router = useRouter()
 const client = ref<Client | null>(null)
 const contracts = shallowRef<Contract[]>([])
 const error = ref<string | null>(null)
+const invitation = ref<{ message: string; url: string | null } | null>(null)
+const isInviting = ref(false)
 
 onMounted(async () => {
   try {
@@ -35,6 +37,32 @@ onMounted(async () => {
         : t.value.clients.loadFailed
   }
 })
+
+async function invite(): Promise<void> {
+  isInviting.value = true
+  error.value = null
+
+  try {
+    const response = await api<{ data: Client; invitation_url: string | null }>(
+      `/clients/${props.id}/invitation`,
+      { method: 'POST' },
+    )
+
+    client.value = response.data
+    invitation.value = {
+      message: t.value.clients.portal.sent(response.data.email),
+      url: response.invitation_url,
+    }
+  } catch (caught) {
+    // A conflict comes with the API's own explanation, in the interface's language.
+    error.value =
+      caught instanceof ApiError && caught.status === 409
+        ? caught.message
+        : t.value.clients.portal.failed
+  } finally {
+    isInviting.value = false
+  }
+}
 
 async function remove(): Promise<void> {
   if (!window.confirm(t.value.clients.confirmDelete)) {
@@ -79,6 +107,45 @@ async function remove(): Promise<void> {
       />
       <DetailItem :label="t.clients.broker" :value="client.broker?.name" />
     </dl>
+
+    <section v-if="client.portal" class="card mt-4 p-5" aria-labelledby="portal-title">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 id="portal-title" class="text-sm font-semibold text-slate-900">
+            {{ t.clients.portal.title }}
+          </h2>
+          <p class="mt-1 text-sm text-slate-600">
+            <template v-if="client.portal.status === 'active'">
+              {{ t.clients.portal.active }}
+            </template>
+            <template v-else-if="client.portal.status === 'invited' && client.portal.invited_at">
+              {{ t.clients.portal.invited(formatDateTime(client.portal.invited_at)) }}
+            </template>
+            <template v-else>{{ t.clients.portal.none }}</template>
+          </p>
+        </div>
+        <button
+          v-if="client.portal.status !== 'active'"
+          type="button"
+          class="btn-secondary"
+          :disabled="isInviting"
+          @click="invite"
+        >
+          {{
+            client.portal.status === 'invited' ? t.clients.portal.resend : t.clients.portal.invite
+          }}
+        </button>
+      </div>
+      <div v-if="invitation" role="status" class="mt-3 text-sm text-emerald-800">
+        <p>{{ invitation.message }}</p>
+        <p v-if="invitation.url" class="mt-1 text-slate-600">
+          {{ t.clients.portal.demoLink }}
+          <a :href="invitation.url" class="link break-all" target="_blank" rel="noopener">
+            {{ invitation.url }}
+          </a>
+        </p>
+      </div>
+    </section>
 
     <div class="mt-8 mb-3 flex items-center justify-between gap-3">
       <h2 class="text-base font-semibold text-slate-900">{{ t.clients.contracts }}</h2>

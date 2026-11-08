@@ -14,6 +14,8 @@ x-api: &api
     APP_DEBUG: "false"
     APP_KEY: ${APP_KEY:?Set APP_KEY in .env}
     APP_URL: https://${BROKER_DOMAIN:?Set BROKER_DOMAIN in .env}
+    # Where invitation and password links lead.
+    PORTAL_URL: https://${PORTAL_DOMAIN:?Set PORTAL_DOMAIN in .env}
     LOG_CHANNEL: stderr
     LOG_LEVEL: info
     DB_CONNECTION: pgsql

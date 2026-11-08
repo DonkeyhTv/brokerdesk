@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { declareClaim, login, logout } from "./actions";
+import {
+  acceptInvitation,
+  declareClaim,
+  login,
+  logout,
+  requestPasswordReset,
+  resetPassword,
+} from "./actions";
 
 const store = vi.hoisted(() => ({
   get: vi.fn(() => ({ value: "secret" })),
@@ -136,5 +143,64 @@ describe("declareClaim", () => {
     await expect(declareClaim({}, claim)).rejects.toThrow(
       "REDIRECT /login?expired=1",
     );
+  });
+});
+
+const chosenPassword = form({
+  email: "a@example.be",
+  token: "abc",
+  password: "a-good-password",
+  password_confirmation: "a-good-password",
+});
+
+describe("passwords chosen from a link", () => {
+  beforeEach(() => store.set.mockClear());
+
+  it("signs the client in once the invitation is accepted", async () => {
+    respond(201, { token: "2|xyz" });
+
+    await expect(acceptInvitation({}, chosenPassword)).rejects.toThrow(
+      "REDIRECT /contracts",
+    );
+    expect(store.set).toHaveBeenCalledWith(
+      "bd_session",
+      "2|xyz",
+      expect.objectContaining({ httpOnly: true }),
+    );
+  });
+
+  it("explains a dead link above the form, and keeps field errors by their field", async () => {
+    respond(422, {
+      errors: {
+        token: ["Ce lien n'est plus valable."],
+        password: ["Trop court."],
+      },
+    });
+
+    await expect(acceptInvitation({}, chosenPassword)).resolves.toEqual({
+      message: "Ce lien n'est plus valable.",
+      errors: { password: ["Trop court."] },
+    });
+    expect(store.set).not.toHaveBeenCalled();
+  });
+
+  it("sends people back to the login page after a reset", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response(null, { status: 204 })),
+    );
+
+    await expect(resetPassword({}, chosenPassword)).rejects.toThrow(
+      "REDIRECT /login?reset=1",
+    );
+    expect(store.set).not.toHaveBeenCalled();
+  });
+
+  it("answers the same to every reset request", async () => {
+    respond(202, { message: "whatever" });
+
+    await expect(
+      requestPasswordReset({}, form({ email: "nobody@example.be" })),
+    ).resolves.toEqual({ done: true });
   });
 });

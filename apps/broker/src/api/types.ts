@@ -35,6 +35,7 @@ export interface Client {
   city: string
   broker?: NamedRef
   contracts_count?: number
+  portal?: { status: 'none' | 'invited' | 'active'; invited_at: string | null }
 }
 
 export interface Contract {

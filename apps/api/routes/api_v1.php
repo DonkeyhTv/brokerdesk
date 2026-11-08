@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\ActivityLogController;
 use App\Http\Controllers\Api\V1\Auth\CurrentUserController;
+use App\Http\Controllers\Api\V1\Auth\PortalPasswordController;
 use App\Http\Controllers\Api\V1\Auth\SessionController;
 use App\Http\Controllers\Api\V1\Auth\TokenController;
 use App\Http\Controllers\Api\V1\ClaimController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\Api\V1\DocumentController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\InsurerController;
 use App\Http\Controllers\Api\V1\NotificationController;
+use App\Http\Controllers\Api\V1\PortalInvitationController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Models\ActivityLog;
 use App\Models\Claim;
@@ -30,6 +32,9 @@ Route::get('/demo/accounts', DemoAccountController::class);
 Route::middleware('throttle:login')->group(function () {
     Route::post('/auth/session', [SessionController::class, 'store']);
     Route::post('/auth/tokens', [TokenController::class, 'store']);
+    Route::post('/auth/invitation', [PortalPasswordController::class, 'acceptInvitation']);
+    Route::post('/auth/forgot-password', [PortalPasswordController::class, 'forgot']);
+    Route::post('/auth/reset-password', [PortalPasswordController::class, 'reset']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -50,6 +55,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/clients/{client}', [ClientController::class, 'show'])->can('view', 'client');
     Route::put('/clients/{client}', [ClientController::class, 'update']);
     Route::delete('/clients/{client}', [ClientController::class, 'destroy'])->can('delete', 'client');
+    Route::post('/clients/{client}/invitation', PortalInvitationController::class)->can('update', 'client');
 
     Route::get('/contracts', [ContractController::class, 'index'])->can('viewAny', Contract::class);
     Route::post('/contracts', [ContractController::class, 'store']);

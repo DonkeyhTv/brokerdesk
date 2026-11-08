@@ -278,3 +278,96 @@ test('the back office speaks Dutch, down to the API validation messages', async 
   await page.reload()
   await expect(page.getByRole('heading', { name: 'Nieuwe klant' })).toBeVisible()
 })
+
+test('a broker invites a client, who activates the portal and later resets the password', async ({
+  page,
+  request,
+}) => {
+  const suffix = uniqueSuffix()
+  const email = `invited.${suffix}@example.be`
+  const PORTAL = 'http://localhost:3000'
+
+  await test.step('the broker creates the client and invites them', async () => {
+    // The admin manages every client, and keeps the demo broker under its login limit.
+    await signInToBackOffice(page, 'Administrateur du cabinet')
+    await page.goto('/clients/new')
+    await page.getByLabel('Prénom').fill('Inès')
+    await page.getByLabel('Nom', { exact: true }).fill(`Invitée${suffix}`)
+    await page.getByLabel('E-mail').fill(email)
+    await page.getByLabel('Rue et numéro').fill('Rue Neuve 3')
+    await page.getByLabel('Code postal').fill('1000')
+    await page.getByLabel('Commune').fill('Bruxelles')
+    await page.getByLabel('Courtier responsable').selectOption({ label: 'Demo Broker' })
+    await page.getByRole('button', { name: 'Enregistrer' }).click()
+
+    const portal = page.getByRole('region', { name: 'Espace client' })
+    await expect(portal).toContainText('n’a pas encore accès au portail')
+    await portal.getByRole('button', { name: 'Inviter au portail' }).click()
+    await expect(portal.getByText(`Invitation envoyée à ${email}.`)).toBeVisible()
+    await expect(portal).toContainText('elle attend que le client choisisse son mot de passe')
+  })
+
+  await test.step('the client chooses a password from the link and lands in the portal', async () => {
+    const link = await page
+      .getByRole('region', { name: 'Espace client' })
+      .getByRole('link', { name: /\/invitation\?token=/ })
+      .getAttribute('href')
+
+    await page.goto(link!)
+    await expect(
+      page.getByRole('heading', { name: 'Bienvenue sur votre espace client' }),
+    ).toBeVisible()
+    await page.getByLabel('Mot de passe', { exact: true }).fill('premier-mot-de-passe')
+    await page.getByLabel('Confirmer le mot de passe').fill('premier-mot-de-passe')
+    await page.getByRole('button', { name: 'Activer mon espace' }).click()
+    await expect(page.getByRole('heading', { name: 'Mes contrats' })).toBeVisible()
+    await expect(page.getByText("Vous n'avez pas encore de contrat.")).toBeVisible()
+  })
+
+  await test.step('the client forgets the password and gets a link by mail', async () => {
+    await page.getByRole('button', { name: 'Se déconnecter' }).click()
+    await page.goto(`${PORTAL}/login`)
+    await page.getByRole('link', { name: 'Mot de passe oublié ?' }).click()
+    await expect(page.getByRole('heading', { name: 'Mot de passe oublié' })).toBeVisible()
+    await page.getByLabel('Adresse e-mail').fill(email)
+    await page.getByRole('button', { name: 'Envoyer le lien' }).click()
+    await expect(page.getByText('Si un compte utilise cette adresse')).toBeVisible()
+  })
+
+  await test.step('the link from the mail sets a new password', async () => {
+    let resetLink = ''
+
+    // The mail leaves through the queue: Mailpit shows it a moment later.
+    await expect
+      .poll(
+        async () => {
+          const search = await request.get(
+            `http://localhost:8025/api/v1/search?query=${encodeURIComponent(`to:"${email}" subject:"nouveau mot de passe"`)}`,
+          )
+          const id = (await search.json()).messages?.[0]?.ID
+
+          if (!id) return ''
+
+          const message = await (
+            await request.get(`http://localhost:8025/api/v1/message/${id}`)
+          ).json()
+          resetLink = message.Text.match(/http\S+nouveau-mot-de-passe\S+/)?.[0] ?? ''
+
+          return resetLink
+        },
+        { timeout: 30_000 },
+      )
+      .toContain('/nouveau-mot-de-passe?token=')
+
+    await page.goto(resetLink.replace(/[\])]+$/, ''))
+    await page.getByLabel('Mot de passe', { exact: true }).fill('nouveau-mot-de-passe')
+    await page.getByLabel('Confirmer le mot de passe').fill('nouveau-mot-de-passe')
+    await page.getByRole('button', { name: 'Enregistrer mon mot de passe' }).click()
+    await expect(page.getByText('Votre mot de passe a été changé')).toBeVisible()
+
+    await page.getByLabel('Adresse e-mail').fill(email)
+    await page.getByLabel('Mot de passe').fill('nouveau-mot-de-passe')
+    await page.getByRole('button', { name: 'Se connecter' }).click()
+    await expect(page.getByRole('heading', { name: 'Mes contrats' })).toBeVisible()
+  })
+})

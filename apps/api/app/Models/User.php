@@ -11,6 +11,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Actions\Portal\InviteClient;
+use App\Notifications\ResetPortalPassword;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -19,6 +22,7 @@ use Laravel\Sanctum\HasApiTokens;
 /**
  * @property UserRole $role
  * @property string|null $locale
+ * @property CarbonImmutable|null $invited_at
  */
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
@@ -63,6 +67,16 @@ class User extends Authenticatable implements HasLocalePreference
         return $this->locale ?? 'fr';
     }
 
+    /**
+     * Only portal clients reset their own password: the link leads to the portal.
+     */
+    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
+    {
+        $url = str_replace('/invitation?', '/nouveau-mot-de-passe?', InviteClient::url($this->email, $token));
+
+        $this->notify(new ResetPortalPassword($url));
+    }
+
     public function isStaff(): bool
     {
         return $this->role !== UserRole::Client;
@@ -101,6 +115,7 @@ class User extends Authenticatable implements HasLocalePreference
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
+            'invited_at' => 'immutable_datetime',
         ];
     }
 }

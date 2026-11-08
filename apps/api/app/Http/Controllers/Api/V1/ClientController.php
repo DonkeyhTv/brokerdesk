@@ -44,7 +44,7 @@ class ClientController extends Controller
             )
             ->allowedSorts('city', 'created_at', AllowedSort::field('name', 'search_name'))
             ->defaultSort(AllowedSort::field('name', 'search_name'))
-            ->with('broker')
+            ->with('broker', 'user')
             ->withCount('contracts')
             ->paginate($this->perPage($request))
             ->withQueryString();
@@ -73,7 +73,7 @@ class ClientController extends Controller
      */
     public function show(Client $client): ClientResource
     {
-        return new ClientResource($client->load('broker')->loadCount('contracts'));
+        return new ClientResource($client->load('broker', 'user')->loadCount('contracts'));
     }
 
     /**

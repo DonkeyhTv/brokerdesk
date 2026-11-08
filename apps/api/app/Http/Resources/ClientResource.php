@@ -31,6 +31,11 @@ class ClientResource extends JsonResource
             'city' => $this->city,
             'broker' => $this->whenLoaded('broker', fn () => ['id' => $this->broker->id, 'name' => $this->broker->name]),
             'contracts_count' => $this->whenCounted('contracts'),
+            // whenLoaded() would leave out clients without an account, the ones this is most about.
+            'portal' => $this->when($this->resource->relationLoaded('user'), fn () => [
+                'status' => $this->user === null ? 'none' : ($this->user->invited_at !== null ? 'invited' : 'active'),
+                'invited_at' => $this->user?->invited_at?->toIso8601String(),
+            ]),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

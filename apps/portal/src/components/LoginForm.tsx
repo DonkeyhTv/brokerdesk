@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { useI18n } from "@/i18n/client";
 import { login, type FormState } from "@/lib/actions";
@@ -74,6 +75,12 @@ export function LoginForm({
               required
             />
             <FieldError name="password" errors={state.errors} />
+            <Link
+              href="/mot-de-passe-oublie"
+              className="link mt-1 inline-block text-xs"
+            >
+              {t.login.forgot}
+            </Link>
           </div>
           <button
             type="submit"

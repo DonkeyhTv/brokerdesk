@@ -52,6 +52,7 @@ return [
 
     'attributes' => [
         'annual_premium_cents' => 'prime annuelle',
+        'broker_id' => 'courtier responsable',
         'city' => 'commune',
         'client_id' => 'client',
         'company_name' => 'raison sociale',

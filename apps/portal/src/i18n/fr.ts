@@ -84,6 +84,33 @@ export const fr = {
     backOffice: "Espace courtier →",
     stackTitle: "Comment c'est construit",
     seeDecisions: "Voir les choix techniques →",
+    forgot: "Mot de passe oublié ?",
+    resetDone:
+      "Votre mot de passe a été changé : connectez-vous avec le nouveau.",
+  },
+  password: {
+    invitationTitle: "Bienvenue sur votre espace client",
+    invitationIntro: (email: string) =>
+      `Choisissez le mot de passe du compte ${email}.`,
+    activate: "Activer mon espace",
+    forgotTitle: "Mot de passe oublié",
+    forgotIntro:
+      "Indiquez votre adresse e-mail : si elle correspond à un compte, vous recevrez un lien pour choisir un nouveau mot de passe.",
+    email: "Adresse e-mail",
+    send: "Envoyer le lien",
+    sent: "Si un compte utilise cette adresse, un lien vient d'être envoyé. Pensez à vérifier vos courriers indésirables.",
+    resetTitle: "Nouveau mot de passe",
+    resetIntro: (email: string) =>
+      `Choisissez un nouveau mot de passe pour ${email}.`,
+    password: "Mot de passe",
+    confirmation: "Confirmer le mot de passe",
+    hint: "10 caractères minimum.",
+    save: "Enregistrer mon mot de passe",
+    saving: "Enregistrement…",
+    sending: "Envoi…",
+    incompleteLink: "Ce lien est incomplet : utilisez celui reçu par mail.",
+    failed: "L'enregistrement a échoué. Réessayez.",
+    backToLogin: "← Retour à la connexion",
   },
   account: {
     contractsLabel: "Mes contrats",
