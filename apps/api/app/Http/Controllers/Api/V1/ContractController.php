@@ -78,7 +78,7 @@ class ContractController extends Controller
     public function destroy(Contract $contract): Response
     {
         if ($contract->claims()->whereIn('status', [ClaimStatus::Open, ClaimStatus::InReview])->exists()) {
-            throw new ConflictHttpException('This contract still has unresolved claims.');
+            throw new ConflictHttpException(__('This contract still has unresolved claims.'));
         }
 
         $contract->delete();

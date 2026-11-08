@@ -36,13 +36,18 @@ class ContractExpiring extends Notification implements ShouldQueue
         $contract = $this->contract;
         $deadline = $contract->noticeDeadline();
 
+        // Sent in the broker's own language: see User::preferredLocale().
         return (new MailMessage)
-            ->subject("Échéance dans moins de {$this->thresholdDays} jours : {$contract->policy_number}")
-            ->greeting('Bonjour '.$notifiable->name.',')
-            ->line("Le contrat {$contract->policy_number} de {$contract->client->displayName()} arrive à échéance le {$contract->expires_on->format('d/m/Y')}.")
+            ->subject(__('Expiry within :days days: :policy', ['days' => $this->thresholdDays, 'policy' => $contract->policy_number]))
+            ->greeting(__('Hello :name,', ['name' => $notifiable->name]))
+            ->line(__('Contract :policy of :client expires on :date.', [
+                'policy' => $contract->policy_number,
+                'client' => $contract->client->displayName(),
+                'date' => $contract->expires_on->format('d/m/Y'),
+            ]))
             ->line($deadline->isPast()
-                ? "Le délai de préavis de trois mois est dépassé depuis le {$deadline->format('d/m/Y')} : le contrat sera reconduit tacitement."
-                : "Le contrat peut encore être résilié jusqu'au {$deadline->format('d/m/Y')}, trois mois avant son échéance.")
+                ? __('The three-month notice period passed on :date: the contract will renew tacitly.', ['date' => $deadline->format('d/m/Y')])
+                : __('The contract can still be cancelled until :date, three months before it expires.', ['date' => $deadline->format('d/m/Y')]))
             ->salutation('BrokerDesk');
     }
 

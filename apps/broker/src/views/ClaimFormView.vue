@@ -4,7 +4,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { api, ApiError } from '@/api/http'
 import type { Claim, Contract, Paginated, Resource } from '@/api/types'
 import { eurosToCents } from '@/utils/format'
-import { CONTRACT_TYPES } from '@/utils/labels'
+import { t } from '@/i18n'
 import AlertMessage from '@/components/AlertMessage.vue'
 import FormField from '@/components/FormField.vue'
 import PageHeader from '@/components/PageHeader.vue'
@@ -28,7 +28,7 @@ const isSubmitting = ref(false)
 function contractOption(contract: Contract): SearchOption {
   return {
     id: contract.id,
-    label: `${contract.client?.name} – ${CONTRACT_TYPES[contract.type]} – ${contract.policy_number}`,
+    label: `${contract.client?.name} – ${t.value.labels.contractTypes[contract.type]} – ${contract.policy_number}`,
   }
 }
 
@@ -51,7 +51,7 @@ async function submit(): Promise<void> {
   const estimate = form.estimate === '' ? null : eurosToCents(form.estimate)
 
   if (form.estimate !== '' && estimate === null) {
-    errors.value = { estimated_amount_cents: ['Indiquez un montant en euros.'] }
+    errors.value = { estimated_amount_cents: [t.value.common.amountInEuros] }
     return
   }
 
@@ -72,9 +72,9 @@ async function submit(): Promise<void> {
   } catch (error) {
     if (error instanceof ApiError && error.status === 422) {
       errors.value = error.errors
-      message.value = 'Veuillez corriger les champs signalés.'
+      message.value = t.value.common.fixFields
     } else {
-      message.value = 'La déclaration a échoué.'
+      message.value = t.value.claims.declareFailed
     }
   } finally {
     isSubmitting.value = false
@@ -83,26 +83,26 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <PageHeader title="Déclarer un sinistre" />
+  <PageHeader :title="t.claims.declare" />
 
   <AlertMessage :message="message" />
 
   <form class="card max-w-2xl space-y-5 p-6" novalidate @submit.prevent="submit">
-    <FormField label="Contrat" name="contract_id" :errors="errors">
+    <FormField :label="t.claims.contract" name="contract_id" :errors="errors">
       <SearchSelect
         id="contract_id"
         v-model="form.contract_id"
         :search="searchContracts"
         :resolve="resolveContract"
-        placeholder="N° de police ou nom du client"
+        :placeholder="t.claims.contractSearchPlaceholder"
       />
     </FormField>
 
     <div class="grid gap-4 sm:grid-cols-2">
-      <FormField label="Date du sinistre" name="occurred_on" :errors="errors">
+      <FormField :label="t.claims.occurredDate" name="occurred_on" :errors="errors">
         <input id="occurred_on" v-model="form.occurred_on" class="input" type="date" />
       </FormField>
-      <FormField label="Estimation (€)" name="estimated_amount_cents" :errors="errors">
+      <FormField :label="t.claims.estimateEuros" name="estimated_amount_cents" :errors="errors">
         <input
           id="estimated_amount_cents"
           v-model="form.estimate"
@@ -113,15 +113,15 @@ async function submit(): Promise<void> {
       </FormField>
     </div>
 
-    <FormField label="Description" name="description" :errors="errors">
+    <FormField :label="t.claims.description" name="description" :errors="errors">
       <textarea id="description" v-model="form.description" class="input" rows="5" />
     </FormField>
 
     <div class="flex gap-2 pt-2">
       <button type="submit" class="btn-primary" :disabled="isSubmitting">
-        {{ isSubmitting ? 'Envoi…' : 'Déclarer' }}
+        {{ isSubmitting ? t.common.sending : t.claims.submit }}
       </button>
-      <RouterLink :to="{ name: 'claims' }" class="btn-secondary">Annuler</RouterLink>
+      <RouterLink :to="{ name: 'claims' }" class="btn-secondary">{{ t.common.cancel }}</RouterLink>
     </div>
   </form>
 </template>

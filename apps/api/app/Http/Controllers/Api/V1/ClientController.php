@@ -100,7 +100,7 @@ class ClientController extends Controller
     public function destroy(Client $client): Response
     {
         if ($client->contracts()->where('status', ContractStatus::Active)->exists()) {
-            throw new ConflictHttpException('This client still has active contracts.');
+            throw new ConflictHttpException(__('This client still has active contracts.'));
         }
 
         $client->delete();

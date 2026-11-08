@@ -14,7 +14,7 @@ class ValidEnterpriseNumber implements ValidationRule
         try {
             EnterpriseNumber::parse((string) $value);
         } catch (InvalidArgumentException) {
-            $fail('The :attribute is not a valid Belgian enterprise number.');
+            $fail(__('The :attribute is not a valid Belgian enterprise number.'));
         }
     }
 }

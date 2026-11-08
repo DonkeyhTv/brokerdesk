@@ -5,7 +5,7 @@ import { api, ApiError } from '@/api/http'
 import type { Claim, ClaimStatus, Resource } from '@/api/types'
 import { useAuthStore } from '@/stores/auth'
 import { centsToEuros, eurosToCents, formatDate, formatDateTime, formatMoney } from '@/utils/format'
-import { CLAIM_STATUSES } from '@/utils/labels'
+import { t } from '@/i18n'
 import AlertMessage from '@/components/AlertMessage.vue'
 import DetailItem from '@/components/DetailItem.vue'
 import FormField from '@/components/FormField.vue'
@@ -49,8 +49,8 @@ onMounted(async () => {
   } catch (caught) {
     error.value =
       caught instanceof ApiError && caught.status === 404
-        ? 'Ce sinistre est introuvable.'
-        : 'Ce sinistre n’a pas pu être chargé.'
+        ? t.value.claims.notFound
+        : t.value.claims.loadFailed
   }
 })
 
@@ -63,12 +63,12 @@ async function save(): Promise<void> {
   const settled = form.settled === '' ? null : eurosToCents(form.settled)
 
   if (form.estimate !== '' && estimate === null) {
-    errors.value = { estimated_amount_cents: ['Indiquez un montant en euros.'] }
+    errors.value = { estimated_amount_cents: [t.value.common.amountInEuros] }
     return
   }
 
   if (form.status === 'settled' && settled === null) {
-    errors.value = { settled_amount_cents: ['Indiquez le montant réglé.'] }
+    errors.value = { settled_amount_cents: [t.value.claims.settledAmountRequired] }
     return
   }
 
@@ -87,12 +87,12 @@ async function save(): Promise<void> {
     })
 
     fill(response.data)
-    success.value = 'Le sinistre a été mis à jour.'
+    success.value = t.value.claims.updated
   } catch (caught) {
     if (caught instanceof ApiError && caught.status === 422) {
       errors.value = caught.errors
     } else {
-      error.value = 'L’enregistrement a échoué.'
+      error.value = t.value.common.saveFailed
     }
   } finally {
     isSubmitting.value = false
@@ -100,7 +100,7 @@ async function save(): Promise<void> {
 }
 
 async function remove(): Promise<void> {
-  if (window.confirm('Supprimer définitivement ce sinistre ?')) {
+  if (window.confirm(t.value.claims.confirmDelete)) {
     await api(`/claims/${props.id}`, { method: 'DELETE' })
     await router.push({ name: 'claims' })
   }
@@ -114,13 +114,13 @@ async function remove(): Promise<void> {
   <template v-if="claim">
     <PageHeader :title="claim.reference" :subtitle="claim.contract?.client?.name">
       <button v-if="auth.isAdmin" type="button" class="btn-danger" @click="remove">
-        Supprimer
+        {{ t.common.delete }}
       </button>
     </PageHeader>
 
     <dl class="card grid gap-5 p-5 sm:grid-cols-2 lg:grid-cols-4">
-      <DetailItem label="Statut"><StatusBadge :status="claim.status" /></DetailItem>
-      <DetailItem label="Contrat">
+      <DetailItem :label="t.claims.status"><StatusBadge :status="claim.status" /></DetailItem>
+      <DetailItem :label="t.claims.contract">
         <RouterLink
           v-if="claim.contract"
           :to="{ name: 'contract', params: { id: claim.contract.id } }"
@@ -129,38 +129,41 @@ async function remove(): Promise<void> {
           {{ claim.contract.policy_number }}
         </RouterLink>
       </DetailItem>
-      <DetailItem label="Survenu le" :value="formatDate(claim.occurred_on)" />
-      <DetailItem label="Déclaré par" :value="claim.declared_by?.name" />
-      <DetailItem label="Estimation" :value="formatMoney(claim.estimated_amount_cents)" />
-      <DetailItem label="Montant réglé" :value="formatMoney(claim.settled_amount_cents)" />
+      <DetailItem :label="t.claims.occurredOn" :value="formatDate(claim.occurred_on)" />
+      <DetailItem :label="t.claims.declaredBy" :value="claim.declared_by?.name" />
+      <DetailItem :label="t.claims.estimate" :value="formatMoney(claim.estimated_amount_cents)" />
+      <DetailItem
+        :label="t.claims.settledAmount"
+        :value="formatMoney(claim.settled_amount_cents)"
+      />
       <DetailItem
         v-if="claim.closed_at"
-        label="Clôturé le"
+        :label="t.claims.closedOn"
         :value="formatDateTime(claim.closed_at)"
       />
       <div class="sm:col-span-2 lg:col-span-4">
-        <DetailItem label="Description">
+        <DetailItem :label="t.claims.description">
           <span class="whitespace-pre-line">{{ claim.description }}</span>
         </DetailItem>
       </div>
     </dl>
 
     <p v-if="isClosed" class="mt-6 text-sm text-slate-500">
-      Ce sinistre est clôturé : il ne peut plus être modifié.
+      {{ t.claims.closed }}
     </p>
 
     <form v-else class="card mt-6 max-w-3xl space-y-5 p-6" novalidate @submit.prevent="save">
-      <h2 class="text-base font-semibold text-slate-900">Suivi du sinistre</h2>
+      <h2 class="text-base font-semibold text-slate-900">{{ t.claims.followUp }}</h2>
 
       <div class="grid gap-4 sm:grid-cols-3">
-        <FormField label="Statut" name="status" :errors="errors">
+        <FormField :label="t.claims.status" name="status" :errors="errors">
           <select id="status" v-model="form.status" class="input">
-            <option v-for="(label, value) in CLAIM_STATUSES" :key="value" :value="value">
+            <option v-for="(label, value) in t.labels.claimStatuses" :key="value" :value="value">
               {{ label }}
             </option>
           </select>
         </FormField>
-        <FormField label="Estimation (€)" name="estimated_amount_cents" :errors="errors">
+        <FormField :label="t.claims.estimateEuros" name="estimated_amount_cents" :errors="errors">
           <input
             id="estimated_amount_cents"
             v-model="form.estimate"
@@ -171,7 +174,7 @@ async function remove(): Promise<void> {
         </FormField>
         <FormField
           v-if="form.status === 'settled'"
-          label="Montant réglé (€)"
+          :label="t.claims.settledAmountEuros"
           name="settled_amount_cents"
           :errors="errors"
         >
@@ -185,7 +188,7 @@ async function remove(): Promise<void> {
         </FormField>
       </div>
 
-      <FormField label="Description" name="description" :errors="errors">
+      <FormField :label="t.claims.description" name="description" :errors="errors">
         <textarea id="description" v-model="form.description" class="input" rows="4" />
       </FormField>
 
@@ -193,11 +196,11 @@ async function remove(): Promise<void> {
         v-if="form.status === 'settled' || form.status === 'rejected'"
         class="text-sm text-slate-500"
       >
-        Enregistrer avec ce statut clôture définitivement le sinistre.
+        {{ t.claims.closingWarning }}
       </p>
 
       <button type="submit" class="btn-primary" :disabled="isSubmitting">
-        {{ isSubmitting ? 'Enregistrement…' : 'Enregistrer' }}
+        {{ isSubmitting ? t.common.saving : t.common.save }}
       </button>
     </form>
   </template>

@@ -1,28 +1,34 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { StatusBadge } from "@/components/StatusBadge";
+import { getLocale, getMessages } from "@/i18n/server";
 import { api } from "@/lib/api";
 import { formatDate, formatMoney } from "@/lib/format";
-import { CONTRACT_TYPES } from "@/lib/labels";
 import type { Contract, Paginated } from "@/lib/types";
 
-export const metadata: Metadata = { title: "Mes contrats" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getMessages()).contracts.title };
+}
 
 export default async function ContractsPage() {
-  const { data: contracts } = await api<Paginated<Contract>>(
-    "/contracts?per_page=100",
-  );
+  const [{ data: contracts }, locale, t] = await Promise.all([
+    api<Paginated<Contract>>("/contracts?per_page=100"),
+    getLocale(),
+    getMessages(),
+  ]);
 
   return (
     <>
-      <h1 className="text-2xl font-semibold tracking-tight">Mes contrats</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">
+        {t.contracts.title}
+      </h1>
       <p className="mt-1 text-sm text-slate-500">
-        {contracts.length} contrat{contracts.length > 1 ? "s" : ""}
+        {t.contracts.count(contracts.length)}
       </p>
 
       {contracts.length === 0 ? (
         <p className="card mt-6 p-8 text-center text-sm text-slate-500">
-          Vous n&apos;avez pas encore de contrat.
+          {t.contracts.empty}
         </p>
       ) : (
         <ul className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -34,7 +40,7 @@ export default async function ContractsPage() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <h2 className="text-base font-semibold text-slate-900">
-                    {CONTRACT_TYPES[contract.type]}
+                    {t.labels.contractTypes[contract.type]}
                   </h2>
                   <StatusBadge status={contract.status} />
                 </div>
@@ -43,15 +49,19 @@ export default async function ContractsPage() {
                 </p>
                 <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <dt className="text-xs text-slate-500">Échéance</dt>
+                    <dt className="text-xs text-slate-500">
+                      {t.contracts.expiry}
+                    </dt>
                     <dd className="font-medium text-slate-900 tabular-nums">
                       {formatDate(contract.expires_on)}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-xs text-slate-500">Prime annuelle</dt>
+                    <dt className="text-xs text-slate-500">
+                      {t.contracts.annualPremium}
+                    </dt>
                     <dd className="font-medium text-slate-900 tabular-nums">
-                      {formatMoney(contract.annual_premium_cents)}
+                      {formatMoney(contract.annual_premium_cents, locale)}
                     </dd>
                   </div>
                 </dl>

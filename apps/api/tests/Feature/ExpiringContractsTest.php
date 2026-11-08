@@ -81,11 +81,12 @@ it('writes a mail that says whether the contract can still be cancelled', functi
     $this->travelTo('2026-01-01');
     $contract = Contract::factory()->create(['starts_on' => '2026-01-01', 'expires_on' => '2027-01-01']);
     $broker = $contract->client->broker;
+    app()->setLocale($broker->preferredLocale());
 
     $mail = (new ContractExpiring($contract, 90))->toMail($broker);
 
     expect($mail->subject)->toContain($contract->policy_number)
-        ->and(implode(' ', $mail->introLines))->toContain('01/01/2027')->toContain('résilié jusqu\'au 01/10/2026');
+        ->and(implode(' ', $mail->introLines))->toContain('01/01/2027')->toContain('résilié jusqu’au 01/10/2026');
 
     $this->travelTo('2026-12-01');
 

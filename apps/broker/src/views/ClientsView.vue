@@ -2,7 +2,7 @@
 import { RouterLink } from 'vue-router'
 import type { Client } from '@/api/types'
 import { useList } from '@/composables/useList'
-import { CLIENT_TYPES } from '@/utils/labels'
+import { t } from '@/i18n'
 import AlertMessage from '@/components/AlertMessage.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import PaginationBar from '@/components/PaginationBar.vue'
@@ -13,8 +13,8 @@ const list = useList<Client>('/clients', { search: '', type: '' }, 'name')
 </script>
 
 <template>
-  <PageHeader title="Clients" subtitle="Particuliers et entreprises">
-    <RouterLink :to="{ name: 'client-new' }" class="btn-primary">Nouveau client</RouterLink>
+  <PageHeader :title="t.clients.title" :subtitle="t.clients.subtitle">
+    <RouterLink :to="{ name: 'client-new' }" class="btn-primary">{{ t.clients.new }}</RouterLink>
   </PageHeader>
 
   <div class="mb-4 flex flex-wrap gap-3">
@@ -22,12 +22,12 @@ const list = useList<Client>('/clients', { search: '', type: '' }, 'name')
       v-model="list.filters.search"
       type="search"
       class="input max-w-sm"
-      placeholder="Nom, e-mail ou n° d'entreprise"
-      aria-label="Rechercher un client"
+      :placeholder="t.clients.searchPlaceholder"
+      :aria-label="t.clients.searchLabel"
     />
-    <select v-model="list.filters.type" class="input w-auto" aria-label="Filtrer par type">
-      <option value="">Tous les types</option>
-      <option v-for="(label, value) in CLIENT_TYPES" :key="value" :value="value">
+    <select v-model="list.filters.type" class="input w-auto" :aria-label="t.clients.typeFilter">
+      <option value="">{{ t.clients.allTypes }}</option>
+      <option v-for="(label, value) in t.labels.clientTypes" :key="value" :value="value">
         {{ label }}
       </option>
     </select>
@@ -41,20 +41,20 @@ const list = useList<Client>('/clients', { search: '', type: '' }, 'name')
         <thead class="bg-slate-50">
           <tr>
             <SortHeader
-              label="Nom"
+              :label="t.clients.name"
               field="name"
               :sort="list.sort.value"
               @toggle="list.toggleSort"
             />
-            <th scope="col" class="table-head">Type</th>
+            <th scope="col" class="table-head">{{ t.clients.type }}</th>
             <SortHeader
-              label="Commune"
+              :label="t.clients.city"
               field="city"
               :sort="list.sort.value"
               @toggle="list.toggleSort"
             />
-            <th scope="col" class="table-head">Courtier</th>
-            <th scope="col" class="table-head text-right">Contrats</th>
+            <th scope="col" class="table-head">{{ t.clients.broker }}</th>
+            <th scope="col" class="table-head text-right">{{ t.clients.contracts }}</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
@@ -62,7 +62,7 @@ const list = useList<Client>('/clients', { search: '', type: '' }, 'name')
             :is-loading="list.isLoading.value"
             :is-empty="list.rows.value.length === 0"
             :columns="5"
-            empty-message="Aucun client ne correspond."
+            :empty-message="t.clients.empty"
           />
           <tr v-for="client in list.rows.value" :key="client.id" class="hover:bg-slate-50">
             <td class="table-cell">
@@ -71,7 +71,7 @@ const list = useList<Client>('/clients', { search: '', type: '' }, 'name')
               </RouterLink>
               <span class="block text-xs text-slate-500">{{ client.email }}</span>
             </td>
-            <td class="table-cell">{{ CLIENT_TYPES[client.type] }}</td>
+            <td class="table-cell">{{ t.labels.clientTypes[client.type] }}</td>
             <td class="table-cell">{{ client.postal_code }} {{ client.city }}</td>
             <td class="table-cell">{{ client.broker?.name }}</td>
             <td class="table-cell text-right tabular-nums">{{ client.contracts_count }}</td>

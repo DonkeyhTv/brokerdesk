@@ -12,7 +12,7 @@ import {
   formatMoney,
   oneYearAfter,
 } from '@/utils/format'
-import { CONTRACT_TYPES, PAYMENT_FREQUENCIES } from '@/utils/labels'
+import { t } from '@/i18n'
 import AlertMessage from '@/components/AlertMessage.vue'
 import DetailItem from '@/components/DetailItem.vue'
 import FormField from '@/components/FormField.vue'
@@ -61,8 +61,8 @@ onMounted(async () => {
   } catch (caught) {
     error.value =
       caught instanceof ApiError && caught.status === 404
-        ? 'Ce contrat est introuvable.'
-        : 'Ce contrat n’a pas pu être chargé.'
+        ? t.value.contracts.notFound
+        : t.value.contracts.loadFailed
   }
 })
 
@@ -70,7 +70,7 @@ async function upload(): Promise<void> {
   const file = fileInput.value?.files?.[0]
 
   if (!file) {
-    uploadError.value = 'Choisissez d’abord un fichier PDF.'
+    uploadError.value = t.value.contracts.chooseFileFirst
     return
   }
 
@@ -91,8 +91,8 @@ async function upload(): Promise<void> {
   } catch (caught) {
     uploadError.value =
       caught instanceof ApiError && caught.status === 422
-        ? 'Seuls les fichiers PDF de 10 Mo maximum sont acceptés.'
-        : 'L’envoi a échoué.'
+        ? t.value.contracts.onlyPdf
+        : t.value.contracts.uploadFailed
   } finally {
     isUploading.value = false
   }
@@ -107,7 +107,7 @@ async function toggleVisibility(document: ContractDocument): Promise<void> {
 }
 
 async function removeDocument(document: ContractDocument): Promise<void> {
-  if (window.confirm(`Supprimer « ${document.original_name} » ?`)) {
+  if (window.confirm(t.value.contracts.confirmDeleteDocument(document.original_name))) {
     await api(`/documents/${document.id}`, { method: 'DELETE' })
     await loadDocuments()
   }
@@ -124,7 +124,7 @@ async function renew(): Promise<void> {
   const cents = eurosToCents(renewalPremium.value)
 
   if (cents === null) {
-    renewalErrors.value = { annual_premium_cents: ['Indiquez un montant en euros.'] }
+    renewalErrors.value = { annual_premium_cents: [t.value.common.amountInEuros] }
     return
   }
 
@@ -136,22 +136,22 @@ async function renew(): Promise<void> {
 
     contract.value = data
     isRenewing.value = false
-    renewed.value = `Contrat renouvelé jusqu'au ${formatDate(data.expires_on)}.`
+    renewed.value = t.value.contracts.renewed(formatDate(data.expires_on))
   } catch (caught) {
     if (caught instanceof ApiError && caught.status === 422) {
       renewalErrors.value = caught.errors
     } else {
       error.value =
         caught instanceof ApiError && caught.status === 409
-          ? 'Ce contrat ne peut plus être renouvelé.'
-          : 'Le renouvellement a échoué.'
+          ? t.value.contracts.notRenewable
+          : t.value.contracts.renewalFailed
       isRenewing.value = false
     }
   }
 }
 
 async function remove(): Promise<void> {
-  if (!window.confirm('Supprimer ce contrat ?')) {
+  if (!window.confirm(t.value.contracts.confirmDelete)) {
     return
   }
 
@@ -161,8 +161,8 @@ async function remove(): Promise<void> {
   } catch (caught) {
     error.value =
       caught instanceof ApiError && caught.status === 409
-        ? 'Ce contrat a encore des sinistres en cours : il ne peut pas être supprimé.'
-        : 'La suppression a échoué.'
+        ? t.value.contracts.hasOpenClaims
+        : t.value.common.deleteFailed
   }
 }
 </script>
@@ -173,7 +173,7 @@ async function remove(): Promise<void> {
   <template v-if="contract">
     <PageHeader
       :title="contract.policy_number"
-      :subtitle="`${CONTRACT_TYPES[contract.type]} · ${contract.client?.name}`"
+      :subtitle="`${t.labels.contractTypes[contract.type]} · ${contract.client?.name}`"
     >
       <button
         v-if="contract.is_renewable && !isRenewing"
@@ -181,15 +181,15 @@ async function remove(): Promise<void> {
         class="btn-primary"
         @click="openRenewal"
       >
-        Renouveler
+        {{ t.contracts.renew }}
       </button>
       <RouterLink
         :to="{ name: 'contract-edit', params: { id: contract.id } }"
         class="btn-secondary"
       >
-        Modifier
+        {{ t.common.edit }}
       </RouterLink>
-      <button type="button" class="btn-danger" @click="remove">Supprimer</button>
+      <button type="button" class="btn-danger" @click="remove">{{ t.common.delete }}</button>
     </PageHeader>
 
     <AlertMessage :message="renewed" tone="success" />
@@ -203,18 +203,15 @@ async function remove(): Promise<void> {
     >
       <div>
         <h2 id="renewal-title" class="text-base font-semibold text-slate-900">
-          Renouveler jusqu'au {{ formatDate(oneYearAfter(contract.expires_on)) }}
+          {{ t.contracts.renewUntil(formatDate(oneYearAfter(contract.expires_on))) }}
         </h2>
-        <p class="mt-1 text-sm text-slate-500">
-          Le contrat repart pour un an à partir de son échéance, et les alertes reprennent pour la
-          nouvelle date.
-        </p>
+        <p class="mt-1 text-sm text-slate-500">{{ t.contracts.renewExplanation }}</p>
       </div>
       <FormField
-        label="Prime annuelle du nouveau terme"
+        :label="t.contracts.renewPremium"
         name="annual_premium_cents"
         :errors="renewalErrors"
-        hint="À adapter si l'assureur indexe la prime."
+        :hint="t.contracts.renewPremiumHint"
       >
         <input
           id="annual_premium_cents"
@@ -224,14 +221,16 @@ async function remove(): Promise<void> {
         />
       </FormField>
       <div class="flex gap-2">
-        <button type="submit" class="btn-primary">Confirmer le renouvellement</button>
-        <button type="button" class="btn-secondary" @click="isRenewing = false">Annuler</button>
+        <button type="submit" class="btn-primary">{{ t.contracts.confirmRenewal }}</button>
+        <button type="button" class="btn-secondary" @click="isRenewing = false">
+          {{ t.common.cancel }}
+        </button>
       </div>
     </form>
 
     <dl class="card grid gap-5 p-5 sm:grid-cols-2 lg:grid-cols-4">
-      <DetailItem label="Statut"><StatusBadge :status="contract.status" /></DetailItem>
-      <DetailItem label="Client">
+      <DetailItem :label="t.contracts.status"><StatusBadge :status="contract.status" /></DetailItem>
+      <DetailItem :label="t.contracts.client">
         <RouterLink
           v-if="contract.client"
           :to="{ name: 'client', params: { id: contract.client.id } }"
@@ -240,25 +239,33 @@ async function remove(): Promise<void> {
           {{ contract.client.name }}
         </RouterLink>
       </DetailItem>
-      <DetailItem label="Assureur" :value="contract.insurer?.name" />
-      <DetailItem label="Prime annuelle" :value="formatMoney(contract.annual_premium_cents)" />
-      <DetailItem label="Début" :value="formatDate(contract.starts_on)" />
-      <DetailItem label="Échéance" :value="formatDate(contract.expires_on)" />
-      <DetailItem label="Préavis jusqu'au">
+      <DetailItem :label="t.contracts.insurer" :value="contract.insurer?.name" />
+      <DetailItem
+        :label="t.contracts.annualPremium"
+        :value="formatMoney(contract.annual_premium_cents)"
+      />
+      <DetailItem :label="t.contracts.start" :value="formatDate(contract.starts_on)" />
+      <DetailItem :label="t.contracts.expiry" :value="formatDate(contract.expires_on)" />
+      <DetailItem :label="t.contracts.noticeUntil">
         {{ formatDate(contract.notice_deadline) }}
         <span v-if="noticeHasPassed" class="block text-xs text-slate-500">
-          Dépassé : reconduction tacite
+          {{ t.contracts.noticePassed }}
         </span>
       </DetailItem>
-      <DetailItem label="Fractionnement" :value="PAYMENT_FREQUENCIES[contract.payment_frequency]" />
+      <DetailItem
+        :label="t.contracts.paymentFrequency"
+        :value="t.labels.paymentFrequencies[contract.payment_frequency]"
+      />
     </dl>
 
     <section class="mt-8" aria-labelledby="documents-title">
-      <h2 id="documents-title" class="mb-3 text-base font-semibold text-slate-900">Documents</h2>
+      <h2 id="documents-title" class="mb-3 text-base font-semibold text-slate-900">
+        {{ t.contracts.documents }}
+      </h2>
 
       <div class="card divide-y divide-slate-100">
         <p v-if="documents.length === 0" class="px-4 py-8 text-center text-sm text-slate-500">
-          Aucun document.
+          {{ t.contracts.noDocuments }}
         </p>
         <div
           v-for="document in documents"
@@ -274,20 +281,22 @@ async function remove(): Promise<void> {
             </a>
             <p class="text-xs text-slate-500">
               {{ formatFileSize(document.size_bytes) }} ·
-              {{ document.visible_to_client ? 'Visible par le client' : 'Interne' }}
+              {{ document.visible_to_client ? t.contracts.visibleToClient : t.contracts.internal }}
             </p>
           </div>
           <div class="flex gap-2">
             <button type="button" class="btn-secondary" @click="toggleVisibility(document)">
-              {{ document.visible_to_client ? 'Rendre interne' : 'Partager au client' }}
+              {{
+                document.visible_to_client ? t.contracts.makeInternal : t.contracts.shareWithClient
+              }}
             </button>
             <button
               type="button"
               class="btn-danger"
-              :aria-label="`Supprimer ${document.original_name}`"
+              :aria-label="t.contracts.deleteDocument(document.original_name)"
               @click="removeDocument(document)"
             >
-              Supprimer
+              {{ t.common.delete }}
             </button>
           </div>
         </div>
@@ -295,7 +304,7 @@ async function remove(): Promise<void> {
         <form class="px-4 py-4" @submit.prevent="upload">
           <AlertMessage :message="uploadError" />
           <div class="flex flex-wrap items-center gap-3">
-            <label for="document-file" class="sr-only">Fichier PDF</label>
+            <label for="document-file" class="sr-only">{{ t.contracts.pdfFile }}</label>
             <input
               id="document-file"
               ref="fileInput"
@@ -305,10 +314,10 @@ async function remove(): Promise<void> {
             />
             <label class="flex items-center gap-2 text-sm text-slate-700">
               <input v-model="visibleToClient" type="checkbox" />
-              Visible par le client
+              {{ t.contracts.visibleToClient }}
             </label>
             <button type="submit" class="btn-primary" :disabled="isUploading">
-              {{ isUploading ? 'Envoi…' : 'Ajouter le PDF' }}
+              {{ isUploading ? t.common.sending : t.contracts.addPdf }}
             </button>
           </div>
         </form>
@@ -317,18 +326,20 @@ async function remove(): Promise<void> {
 
     <section class="mt-8" aria-labelledby="claims-title">
       <div class="mb-3 flex items-center justify-between gap-3">
-        <h2 id="claims-title" class="text-base font-semibold text-slate-900">Sinistres</h2>
+        <h2 id="claims-title" class="text-base font-semibold text-slate-900">
+          {{ t.contracts.claims }}
+        </h2>
         <RouterLink
           v-if="contract.status === 'active'"
           :to="{ name: 'claim-new', query: { contract: contract.id } }"
           class="btn-secondary"
         >
-          Déclarer un sinistre
+          {{ t.contracts.declareClaim }}
         </RouterLink>
       </div>
       <div class="card divide-y divide-slate-100">
         <p v-if="claims.length === 0" class="px-4 py-8 text-center text-sm text-slate-500">
-          Aucun sinistre sur ce contrat.
+          {{ t.contracts.noClaims }}
         </p>
         <RouterLink
           v-for="claim in claims"

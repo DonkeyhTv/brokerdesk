@@ -1,58 +1,50 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { Logo } from "@/components/Logo";
+import { getMessages } from "@/i18n/server";
 
-export const metadata: Metadata = {
-  title: "BrokerDesk – Vos assurances, au même endroit",
-  alternates: { canonical: "/" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { home } = await getMessages();
 
-const FEATURES = [
-  {
-    title: "Vos contrats",
-    text: "Auto, habitation, RC familiale… Retrouvez vos garanties, vos primes et vos échéances.",
-  },
-  {
-    title: "Vos documents",
-    text: "Téléchargez à tout moment les documents que votre courtier met à votre disposition.",
-  },
-  {
-    title: "Vos sinistres",
-    text: "Déclarez un sinistre en quelques minutes et suivez son avancement.",
-  },
-];
+  return { title: home.metaTitle, alternates: { canonical: "/" } };
+}
 
-export default function Home() {
+export default async function Home() {
+  const { home } = await getMessages();
+
   return (
     <div className="flex flex-1 flex-col">
-      <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-5 sm:px-6">
+      <header className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-5 sm:px-6">
         <Logo />
-        <Link href="/login" className="btn-secondary">
-          Se connecter
-        </Link>
+        <div className="flex items-center gap-3">
+          <LocaleSwitcher />
+          <Link href="/login" className="btn-secondary">
+            {home.signIn}
+          </Link>
+        </div>
       </header>
 
       <main className="flex-1">
         <section className="mx-auto max-w-5xl px-4 pt-14 pb-16 sm:px-6 sm:pt-20">
           <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-balance text-slate-900 sm:text-5xl">
-            Vos assurances, au même endroit
+            {home.headline}
           </h1>
           <p className="mt-5 max-w-xl text-lg text-pretty text-slate-600">
-            Consultez vos contrats, téléchargez vos documents et déclarez un
-            sinistre en ligne, en lien direct avec votre courtier.
+            {home.intro}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/login" className="btn-primary">
-              Accéder à mon espace
+              {home.cta}
             </Link>
           </div>
         </section>
 
         <section
-          aria-label="Ce que vous pouvez faire"
+          aria-label={home.featuresLabel}
           className="mx-auto grid max-w-5xl gap-4 px-4 pb-20 sm:grid-cols-3 sm:px-6"
         >
-          {FEATURES.map((feature) => (
+          {home.features.map((feature) => (
             <article key={feature.title} className="card p-6">
               <h2 className="text-base font-semibold text-slate-900">
                 {feature.title}
@@ -64,10 +56,9 @@ export default function Home() {
       </main>
 
       <footer className="border-t border-slate-200 px-4 py-6 text-center text-xs text-slate-500">
-        BrokerDesk est un projet de démonstration : les cabinets, les assureurs
-        et les données sont fictifs.{" "}
+        {home.footer}{" "}
         <Link href="/a-propos" className="link">
-          Comment c&apos;est construit
+          {home.howBuilt}
         </Link>
       </footer>
     </div>

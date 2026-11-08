@@ -43,7 +43,7 @@ class UserPolicy
     private function unlessDemoAccount(User $target, Response $response): Response
     {
         if ($response->allowed() && DemoAccounts::protects($target)) {
-            return Response::deny('Demo accounts cannot be changed, so that every visitor can sign in.');
+            return Response::deny(__('Demo accounts cannot be changed, so that every visitor can sign in.'));
         }
 
         return $response;

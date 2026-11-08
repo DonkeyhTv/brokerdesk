@@ -3,7 +3,7 @@ import { RouterLink, useRoute } from 'vue-router'
 import type { Claim } from '@/api/types'
 import { useList } from '@/composables/useList'
 import { formatDate, formatMoney } from '@/utils/format'
-import { CLAIM_STATUSES } from '@/utils/labels'
+import { t } from '@/i18n'
 import AlertMessage from '@/components/AlertMessage.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import PaginationBar from '@/components/PaginationBar.vue'
@@ -21,8 +21,8 @@ const list = useList<Claim>(
 </script>
 
 <template>
-  <PageHeader title="Sinistres" subtitle="Déclarations et suivi">
-    <RouterLink :to="{ name: 'claim-new' }" class="btn-primary">Déclarer un sinistre</RouterLink>
+  <PageHeader :title="t.claims.title" :subtitle="t.claims.subtitle">
+    <RouterLink :to="{ name: 'claim-new' }" class="btn-primary">{{ t.claims.declare }}</RouterLink>
   </PageHeader>
 
   <div class="mb-4 flex flex-wrap gap-3">
@@ -30,12 +30,12 @@ const list = useList<Claim>(
       v-model="list.filters.search"
       type="search"
       class="input max-w-xs"
-      placeholder="Référence"
-      aria-label="Rechercher un sinistre"
+      :placeholder="t.claims.searchPlaceholder"
+      :aria-label="t.claims.searchLabel"
     />
-    <select v-model="list.filters.status" class="input w-auto" aria-label="Filtrer par statut">
-      <option value="">Tous les statuts</option>
-      <option v-for="(label, value) in CLAIM_STATUSES" :key="value" :value="value">
+    <select v-model="list.filters.status" class="input w-auto" :aria-label="t.claims.statusFilter">
+      <option value="">{{ t.claims.allStatuses }}</option>
+      <option v-for="(label, value) in t.labels.claimStatuses" :key="value" :value="value">
         {{ label }}
       </option>
     </select>
@@ -49,26 +49,26 @@ const list = useList<Claim>(
         <thead class="bg-slate-50">
           <tr>
             <SortHeader
-              label="Référence"
+              :label="t.claims.reference"
               field="reference"
               :sort="list.sort.value"
               @toggle="list.toggleSort"
             />
-            <th scope="col" class="table-head">Client</th>
-            <th scope="col" class="table-head">Police</th>
+            <th scope="col" class="table-head">{{ t.claims.client }}</th>
+            <th scope="col" class="table-head">{{ t.claims.policy }}</th>
             <SortHeader
-              label="Survenu le"
+              :label="t.claims.occurredOn"
               field="occurred_on"
               :sort="list.sort.value"
               @toggle="list.toggleSort"
             />
             <SortHeader
-              label="Statut"
+              :label="t.claims.status"
               field="status"
               :sort="list.sort.value"
               @toggle="list.toggleSort"
             />
-            <th scope="col" class="table-head text-right">Estimation</th>
+            <th scope="col" class="table-head text-right">{{ t.claims.estimate }}</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
@@ -76,7 +76,7 @@ const list = useList<Claim>(
             :is-loading="list.isLoading.value"
             :is-empty="list.rows.value.length === 0"
             :columns="6"
-            empty-message="Aucun sinistre ne correspond."
+            :empty-message="t.claims.empty"
           />
           <tr v-for="claim in list.rows.value" :key="claim.id" class="hover:bg-slate-50">
             <td class="table-cell whitespace-nowrap">

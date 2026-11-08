@@ -204,3 +204,27 @@ test('evaluators see how the application is built, from the login page and from 
     'https://github.com/DonkeyhTv/brokerdesk',
   )
 })
+
+test('the portal speaks Dutch, from the login page to the API validation messages', async ({
+  page,
+}) => {
+  await page.goto(`${PORTAL}/login`)
+  await page.getByRole('group', { name: 'Langue' }).getByRole('button', { name: 'nl' }).click()
+  await expect(page.getByRole('heading', { name: 'Klantenomgeving' })).toBeVisible()
+  await expect(page.locator('html')).toHaveAttribute('lang', 'nl')
+
+  await page.getByRole('button', { name: 'Particuliere klant', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Mijn contracten' })).toBeVisible()
+  await expect(page.getByText('Actief').first()).toBeVisible()
+
+  await page.getByRole('link', { name: 'Schadegevallen' }).click()
+  await page.getByRole('link', { name: 'Een schadegeval aangeven' }).click()
+  await page.getByRole('button', { name: 'Mijn aangifte verzenden' }).click()
+  await expect(page.getByText('Het veld beschrijving is verplicht.')).toBeVisible()
+
+  // The choice is a cookie: it holds on the next visit, until changed back.
+  await page.goto(`${PORTAL}/`)
+  await expect(page.getByRole('heading', { name: 'Uw verzekeringen op één plek' })).toBeVisible()
+  await page.getByRole('group', { name: 'Taal' }).getByRole('button', { name: 'fr' }).click()
+  await expect(page.getByRole('heading', { name: 'Vos assurances, au même endroit' })).toBeVisible()
+})

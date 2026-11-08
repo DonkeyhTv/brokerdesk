@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { t } from '@/i18n'
 
 export interface SearchOption {
   id: number
@@ -16,7 +17,7 @@ const props = withDefaults(
     placeholder?: string
     disabled?: boolean
   }>(),
-  { resolve: undefined, placeholder: 'Rechercher…', disabled: false },
+  { resolve: undefined, placeholder: undefined, disabled: false },
 )
 
 const model = defineModel<number | ''>({ required: true })
@@ -154,7 +155,7 @@ onBeforeUnmount(() => clearTimeout(timer))
       :aria-expanded="isOpen"
       :aria-controls="listId"
       :aria-activedescendant="isOpen ? activeId : undefined"
-      :placeholder="placeholder"
+      :placeholder="placeholder ?? t.common.search"
       :disabled="disabled"
       @input="onInput"
       @focus="open"
@@ -182,9 +183,11 @@ onBeforeUnmount(() => clearTimeout(timer))
         {{ option.label }}
       </li>
       <li v-if="!isLoading && options.length === 0" class="px-3 py-2 text-slate-500">
-        Aucun résultat
+        {{ t.common.noMatch }}
       </li>
-      <li v-if="isLoading && options.length === 0" class="px-3 py-2 text-slate-500">Recherche…</li>
+      <li v-if="isLoading && options.length === 0" class="px-3 py-2 text-slate-500">
+        {{ t.common.searching }}
+      </li>
     </ul>
   </div>
 </template>

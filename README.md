@@ -36,7 +36,7 @@ docker compose up
 
 The first start installs dependencies and takes a few minutes. Then open the [back office](http://localhost:5173) or the [client portal](http://localhost:3000), with the same accounts as above. Also available: the [API documentation](http://localhost:8000/docs/api) and the mail catcher, [Mailpit](http://localhost:8025), which shows the expiry alerts.
 
-All data is fictional, except for real Belgian communes and postal codes. The interface is in French, because its users are Belgian. Code and documentation are in English.
+All data is fictional, except for real Belgian communes and postal codes. The interface is in French and Dutch, like Belgium; the switch sits at the top of every page. Code and documentation are in English.
 
 ## What it does
 
@@ -46,6 +46,7 @@ All data is fictional, except for real Belgian communes and postal codes. The in
 - **Documents:** private PDF storage per contract, and brokers choose what clients can see.
 - **Claims:** clients declare them in the portal, and brokers follow them up until they are settled or rejected.
 - **Traceability:** an activity log records who changed what and when, and contracts export to CSV.
+- **French and Dutch:** both interfaces follow the browser's language until people choose, the API answers in it, validation messages included, and expiry alerts reach each broker in the language they last used.
 
 ## Stack and why
 
@@ -63,6 +64,7 @@ All data is fictional, except for real Belgian communes and postal codes. The in
 - **Tenant isolation is enforced twice.** Queries and policies filter by brokerage, and composite foreign keys such as `(client_id, brokerage_id)` make a cross-brokerage reference impossible even if the code has a bug. See [the contracts migration](apps/api/database/migrations/2026_11_05_100200_create_contracts_table.php).
 - **Two authentication flows, for two kinds of client.** The Vue app uses Sanctum cookie sessions with CSRF. The Next.js server holds a Sanctum token in an `httpOnly` cookie and calls the API itself, so scripts in the browser never see it.
 - **Records a user may not see answer 404, not 403,** so their existence stays hidden. See [the policies](apps/api/app/Policies).
+- **Translations are checked by the compiler.** Each interface types its Dutch catalog after the French one, so a missing translation fails the build, and no i18n library is needed under the strict content security policy. See [the back office catalogs](apps/broker/src/i18n).
 - **A strict content security policy.** The back office build has no inline code, so it runs only files from its own origin. The portal gives each page view a fresh nonce, and the browser tests fail on any violation. See [the portal proxy](apps/portal/src/proxy.ts).
 - **Money is stored in integer cents, and Belgian enterprise numbers are value objects** validated with their mod 97 check digits. See [`EnterpriseNumber`](apps/api/app/Support/EnterpriseNumber.php).
 - **N+1 queries fail the tests,** because lazy loading is prevented outside production.
@@ -199,4 +201,3 @@ If the server already runs a web server on ports 80 and 443, such as nginx with 
 ## What I'd do next
 
 - **Portal invitations and password reset.** Only the seeded clients have a portal account today.
-- **Dutch.** Belgian brokers need both languages, and the interface would need translation files first.

@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import { reactive, ref, shallowRef, watch } from 'vue'
 import { api, type QueryValue } from '@/api/http'
 import type { PageMeta, Paginated } from '@/api/types'
@@ -48,7 +49,7 @@ export function useList<T>(
       }
     } catch (caught) {
       if (request === latestRequest) {
-        error.value = caught instanceof Error ? caught.message : 'Une erreur est survenue.'
+        error.value = caught instanceof Error ? caught.message : t.value.common.genericError
       }
     } finally {
       if (request === latestRequest) {

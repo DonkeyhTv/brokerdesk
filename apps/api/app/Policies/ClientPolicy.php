@@ -37,7 +37,7 @@ class ClientPolicy
         $response = $this->conceal($user->canSee($client), $user->manages($client));
 
         if ($response->allowed() && DemoAccounts::protects($client->user)) {
-            return Response::deny('This client signs in with a demo account, so that every visitor can use the portal.');
+            return Response::deny(__('This client signs in with a demo account, so that every visitor can use the portal.'));
         }
 
         return $response;

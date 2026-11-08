@@ -1,16 +1,29 @@
-const euros = new Intl.NumberFormat('fr-BE', { style: 'currency', currency: 'EUR' })
-const wholeEuros = new Intl.NumberFormat('fr-BE', {
-  style: 'currency',
-  currency: 'EUR',
-  maximumFractionDigits: 0,
-})
+import { intlLocale, locale } from '@/i18n'
+
+const formatters = new Map<string, Intl.NumberFormat>()
+
+function currency(wholeEuros: boolean): Intl.NumberFormat {
+  const key = `${intlLocale()}:${wholeEuros}`
+  let formatter = formatters.get(key)
+
+  if (!formatter) {
+    formatter = new Intl.NumberFormat(intlLocale(), {
+      style: 'currency',
+      currency: 'EUR',
+      ...(wholeEuros ? { maximumFractionDigits: 0 } : {}),
+    })
+    formatters.set(key, formatter)
+  }
+
+  return formatter
+}
 
 export function formatMoney(cents: number | null | undefined): string {
-  return cents === null || cents === undefined ? '—' : euros.format(cents / 100)
+  return cents === null || cents === undefined ? '—' : currency(false).format(cents / 100)
 }
 
 export function formatWholeMoney(cents: number): string {
-  return wholeEuros.format(cents / 100)
+  return currency(true).format(cents / 100)
 }
 
 /** Dates arrive as YYYY-MM-DD: they are read without any time zone, to never shift a day. */
@@ -25,13 +38,15 @@ export function formatDate(value: string | null | undefined): string {
 }
 
 export function formatDateTime(value: string): string {
-  return new Date(value).toLocaleString('fr-BE', { dateStyle: 'short', timeStyle: 'short' })
+  return new Date(value).toLocaleString(intlLocale(), { dateStyle: 'short', timeStyle: 'short' })
 }
 
 export function formatFileSize(bytes: number): string {
+  const [kilo, mega] = locale.value === 'nl' ? ['KB', 'MB'] : ['Ko', 'Mo']
+
   return bytes < 1024 * 1024
-    ? `${Math.max(1, Math.round(bytes / 1024))} Ko`
-    : `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} Mo`
+    ? `${Math.max(1, Math.round(bytes / 1024))} ${kilo}`
+    : `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} ${mega}`
 }
 
 export function daysUntil(date: string, today = new Date()): number {
@@ -41,9 +56,16 @@ export function daysUntil(date: string, today = new Date()): number {
   return Math.round((Date.UTC(year, month - 1, day) - start) / 86_400_000)
 }
 
-/** Reads what people type ("1 234,50" or "1234.5") as a number of cents; null when it is not one. */
+/**
+ * Reads what people type ("1 234,50", "1.234,50" or "1234.5") as a number of cents; null when it
+ * is not one. With a comma, dots can only separate thousands.
+ */
 export function eurosToCents(value: string): number | null {
-  const normalized = value.replace(/[\s €]/g, '').replace(',', '.')
+  let normalized = value.replace(/[\s €]/g, '')
+
+  if (normalized.includes(',')) {
+    normalized = normalized.replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.')
+  }
 
   if (!/^\d+(\.\d{1,2})?$/.test(normalized)) {
     return null

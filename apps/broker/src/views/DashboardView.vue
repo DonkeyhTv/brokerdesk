@@ -3,9 +3,9 @@ import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { api } from '@/api/http'
 import type { Dashboard } from '@/api/types'
+import { t } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 import { daysUntil, formatDate, formatMoney, formatWholeMoney } from '@/utils/format'
-import { CONTRACT_TYPES } from '@/utils/labels'
 import AlertMessage from '@/components/AlertMessage.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import PremiumChart from '@/components/PremiumChart.vue'
@@ -18,15 +18,19 @@ onMounted(async () => {
   try {
     dashboard.value = await api<Dashboard>('/dashboard')
   } catch {
-    error.value = 'Le tableau de bord n’a pas pu être chargé.'
+    error.value = t.value.dashboard.loadFailed
   }
 })
 </script>
 
 <template>
   <PageHeader
-    title="Tableau de bord"
-    :subtitle="auth.isAdmin ? `Tout le cabinet ${auth.user?.brokerage.name}` : 'Votre portefeuille'"
+    :title="t.dashboard.title"
+    :subtitle="
+      auth.isAdmin
+        ? t.dashboard.wholeBrokerage(auth.user?.brokerage.name ?? '')
+        : t.dashboard.ownPortfolio
+    "
   />
 
   <AlertMessage :message="error" />
@@ -34,14 +38,14 @@ onMounted(async () => {
   <template v-if="dashboard">
     <section aria-labelledby="renewals-title">
       <h2 id="renewals-title" class="mb-3 text-sm font-semibold text-slate-700">
-        Contrats à échéance
+        {{ t.dashboard.expiringTitle }}
       </h2>
       <div class="grid gap-4 sm:grid-cols-3">
         <RouterLink
           v-for="tile in [
-            { label: 'Dans 30 jours', days: 30, value: dashboard.expiring.within_30 },
-            { label: 'Entre 31 et 60 jours', days: 60, value: dashboard.expiring.from_31_to_60 },
-            { label: 'Entre 61 et 90 jours', days: 90, value: dashboard.expiring.from_61_to_90 },
+            { label: t.dashboard.within30, days: 30, value: dashboard.expiring.within_30 },
+            { label: t.dashboard.from31To60, days: 60, value: dashboard.expiring.from_31_to_60 },
+            { label: t.dashboard.from61To90, days: 90, value: dashboard.expiring.from_61_to_90 },
           ]"
           :key="tile.days"
           :to="{ name: 'contracts', query: { expires_within: tile.days } }"
@@ -53,24 +57,24 @@ onMounted(async () => {
       </div>
     </section>
 
-    <section class="mt-4 grid gap-4 sm:grid-cols-3" aria-label="Chiffres clés">
+    <section class="mt-4 grid gap-4 sm:grid-cols-3" :aria-label="t.dashboard.keyFigures">
       <RouterLink
         :to="{ name: 'claims', query: { status: 'open' } }"
         class="card block p-5 transition-shadow hover:shadow-md"
       >
-        <p class="text-sm text-slate-500">Sinistres en cours</p>
+        <p class="text-sm text-slate-500">{{ t.dashboard.openClaims }}</p>
         <p class="mt-1 text-3xl font-semibold text-slate-900 tabular-nums">
           {{ dashboard.open_claims }}
         </p>
       </RouterLink>
       <div class="card p-5">
-        <p class="text-sm text-slate-500">Contrats actifs</p>
+        <p class="text-sm text-slate-500">{{ t.dashboard.activeContracts }}</p>
         <p class="mt-1 text-3xl font-semibold text-slate-900 tabular-nums">
           {{ dashboard.active_contracts }}
         </p>
       </div>
       <div class="card p-5">
-        <p class="text-sm text-slate-500">Volume de primes annuel</p>
+        <p class="text-sm text-slate-500">{{ t.dashboard.annualPremiums }}</p>
         <p class="mt-1 text-3xl font-semibold text-slate-900 tabular-nums">
           {{ formatWholeMoney(dashboard.annual_premium_cents) }}
         </p>
@@ -81,9 +85,11 @@ onMounted(async () => {
       <PremiumChart :rows="dashboard.premium_by_type" />
 
       <section class="card p-5" aria-labelledby="next-title">
-        <h2 id="next-title" class="text-base font-semibold text-slate-900">Prochaines échéances</h2>
+        <h2 id="next-title" class="text-base font-semibold text-slate-900">
+          {{ t.dashboard.nextExpiries }}
+        </h2>
         <p v-if="dashboard.next_expiries.length === 0" class="mt-6 text-sm text-slate-500">
-          Aucune échéance à venir.
+          {{ t.dashboard.noExpiries }}
         </p>
         <ul v-else class="mt-3 divide-y divide-slate-100">
           <li v-for="contract in dashboard.next_expiries" :key="contract.id">
@@ -96,7 +102,7 @@ onMounted(async () => {
                   {{ contract.client?.name }}
                 </span>
                 <span class="block truncate text-xs text-slate-500">
-                  {{ CONTRACT_TYPES[contract.type] }} · {{ contract.policy_number }} ·
+                  {{ t.labels.contractTypes[contract.type] }} · {{ contract.policy_number }} ·
                   {{ formatMoney(contract.annual_premium_cents) }}
                 </span>
               </span>
@@ -105,7 +111,7 @@ onMounted(async () => {
                   {{ formatDate(contract.expires_on) }}
                 </span>
                 <span class="block text-xs text-slate-500">
-                  dans {{ daysUntil(contract.expires_on) }} j
+                  {{ t.common.inDays(daysUntil(contract.expires_on)) }}
                 </span>
               </span>
             </RouterLink>

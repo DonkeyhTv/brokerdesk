@@ -1,9 +1,12 @@
+import type { Messages } from "@/i18n";
 import { STACK, type StackLayerId } from "@/lib/stack";
 
 export function TechStack({
+  t,
   current,
   compact = false,
 }: {
+  t: Messages["about"];
   /** The layer the visitor is using right now. */
   current?: StackLayerId;
   /** Names and tools only, for the login page. */
@@ -23,12 +26,12 @@ export function TechStack({
           <dt
             className={`font-semibold text-slate-900 ${compact ? "w-full text-xs sm:w-32 sm:shrink-0" : "text-sm"}`}
           >
-            {layer.name}
+            {t.layers[layer.id].name}
             {layer.id === current && (
               <span
                 className={`rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap text-brand-700 ${compact ? "mt-0.5 block w-fit" : "ml-1"}`}
               >
-                vous êtes ici
+                {t.youAreHere}
               </span>
             )}
           </dt>
@@ -45,7 +48,9 @@ export function TechStack({
             ))}
           </dd>
           {!compact && (
-            <dd className="mt-3 text-sm text-slate-600">{layer.role}</dd>
+            <dd className="mt-3 text-sm text-slate-600">
+              {t.layers[layer.id].role}
+            </dd>
           )}
         </div>
       ))}

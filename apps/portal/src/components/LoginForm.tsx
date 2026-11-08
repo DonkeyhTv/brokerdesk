@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useI18n } from "@/i18n/client";
 import { login, type FormState } from "@/lib/actions";
 import type { DemoAccounts } from "@/lib/types";
 import { FieldError } from "./FieldError";
@@ -18,16 +19,17 @@ export function LoginForm({
   notice?: string;
 }) {
   const [state, action, isPending] = useActionState(login, initialState);
+  const { t } = useI18n();
   const accounts =
     demo?.accounts.filter((account) => account.app === "portal") ?? [];
 
   return (
     <>
       <div className="card p-6 sm:p-8">
-        <h1 className="text-lg font-semibold text-slate-900">Espace client</h1>
-        <p className="mt-1 mb-5 text-sm text-slate-500">
-          Vos contrats, vos documents et vos sinistres.
-        </p>
+        <h1 className="text-lg font-semibold text-slate-900">
+          {t.login.title}
+        </h1>
+        <p className="mt-1 mb-5 text-sm text-slate-500">{t.login.subtitle}</p>
 
         {(state.message ?? notice) && (
           <p
@@ -44,7 +46,7 @@ export function LoginForm({
               htmlFor="email"
               className="mb-1 block text-sm font-medium text-slate-700"
             >
-              Adresse e-mail
+              {t.login.email}
             </label>
             <input
               id="email"
@@ -61,7 +63,7 @@ export function LoginForm({
               htmlFor="password"
               className="mb-1 block text-sm font-medium text-slate-700"
             >
-              Mot de passe
+              {t.login.password}
             </label>
             <input
               id="password"
@@ -78,7 +80,7 @@ export function LoginForm({
             className="btn-primary w-full"
             disabled={isPending}
           >
-            {isPending ? "Connexion…" : "Se connecter"}
+            {isPending ? t.login.submitting : t.login.submit}
           </button>
         </form>
       </div>
@@ -89,12 +91,9 @@ export function LoginForm({
           className="card mt-4 border-brand-100 bg-brand-50 p-5"
         >
           <h2 id="demo-title" className="text-sm font-semibold text-brand-700">
-            Vous évaluez l&apos;application ?
+            {t.login.demoTitle}
           </h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Connectez-vous en un clic. Les données sont fictives et
-            réinitialisées chaque nuit.
-          </p>
+          <p className="mt-1 text-sm text-slate-600">{t.login.demoText}</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {accounts.map((account) => (
               <form key={account.email} action={action}>
@@ -110,7 +109,7 @@ export function LoginForm({
               </form>
             ))}
             <a href={BACK_OFFICE_URL} className="btn-secondary">
-              Espace courtier →
+              {t.login.backOffice}
             </a>
           </div>
         </section>

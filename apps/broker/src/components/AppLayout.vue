@@ -2,8 +2,9 @@
 import { computed, onMounted, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { t } from '@/i18n'
 import { useNotificationsStore } from '@/stores/notifications'
-import { USER_ROLES } from '@/utils/labels'
+import LocaleSwitcher from './LocaleSwitcher.vue'
 
 const auth = useAuthStore()
 const notifications = useNotificationsStore()
@@ -11,19 +12,19 @@ const route = useRoute()
 const router = useRouter()
 
 const links = computed(() => [
-  { to: { name: 'dashboard' }, label: 'Tableau de bord', section: 'dashboard' },
-  { to: { name: 'clients' }, label: 'Clients', section: 'client' },
-  { to: { name: 'contracts' }, label: 'Contrats', section: 'contract' },
-  { to: { name: 'claims' }, label: 'Sinistres', section: 'claim' },
+  { to: { name: 'dashboard' }, label: t.value.nav.dashboard, section: 'dashboard' },
+  { to: { name: 'clients' }, label: t.value.nav.clients, section: 'client' },
+  { to: { name: 'contracts' }, label: t.value.nav.contracts, section: 'contract' },
+  { to: { name: 'claims' }, label: t.value.nav.claims, section: 'claim' },
   ...(auth.isAdmin
     ? [
-        { to: { name: 'users' }, label: 'Équipe', section: 'users' },
-        { to: { name: 'activity' }, label: 'Journal', section: 'activity' },
+        { to: { name: 'users' }, label: t.value.nav.team, section: 'users' },
+        { to: { name: 'activity' }, label: t.value.nav.activity, section: 'activity' },
       ]
     : []),
   // Only for people evaluating the demo, who sign in with its shared accounts.
   ...(auth.user?.is_demo_account
-    ? [{ to: { name: 'about' }, label: 'Comment c’est construit', section: 'about' }]
+    ? [{ to: { name: 'about' }, label: t.value.nav.about, section: 'about' }]
     : []),
 ])
 
@@ -54,7 +55,7 @@ watch(
       </div>
 
       <nav
-        aria-label="Navigation principale"
+        :aria-label="t.nav.main"
         class="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-1 lg:flex-col lg:overflow-visible lg:pb-0"
       >
         <RouterLink
@@ -76,7 +77,8 @@ watch(
       <div class="hidden border-t border-slate-800 p-4 lg:block">
         <p class="truncate text-sm font-medium text-white">{{ auth.user?.name }}</p>
         <p class="truncate text-xs text-slate-400">
-          {{ auth.user ? USER_ROLES[auth.user.role] : '' }} · {{ auth.user?.brokerage.name }}
+          {{ auth.user ? t.labels.userRoles[auth.user.role] : '' }} ·
+          {{ auth.user?.brokerage.name }}
         </p>
       </div>
     </aside>
@@ -85,17 +87,18 @@ watch(
       <header
         class="flex items-center justify-end gap-2 border-b border-slate-200 bg-white px-4 py-2.5 sm:px-8"
       >
+        <LocaleSwitcher />
         <RouterLink :to="{ name: 'notifications' }" class="btn-secondary">
-          Notifications
+          {{ t.nav.notifications }}
           <span
             v-if="notifications.unreadCount > 0"
             class="rounded-full bg-brand-600 px-1.5 py-0.5 text-xs font-semibold text-white"
           >
             {{ notifications.unreadCount }}
-            <span class="sr-only">non lues</span>
+            <span class="sr-only">{{ t.nav.unread }}</span>
           </span>
         </RouterLink>
-        <button type="button" class="btn-secondary" @click="logout">Se déconnecter</button>
+        <button type="button" class="btn-secondary" @click="logout">{{ t.nav.logout }}</button>
       </header>
 
       <main class="mx-auto max-w-6xl px-4 py-6 sm:px-8 sm:py-8">

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { CLAIM_STATUSES, CONTRACT_STATUSES } from '@/utils/labels'
+import { t } from '@/i18n'
 import type { ClaimStatus, ContractStatus } from '@/api/types'
 
 const props = defineProps<{ status: ClaimStatus | ContractStatus }>()
@@ -17,7 +17,10 @@ const STYLES: Record<ClaimStatus | ContractStatus, string> = {
 }
 
 const label = computed(
-  () => ({ ...CONTRACT_STATUSES, ...CLAIM_STATUSES })[props.status] satisfies string,
+  () =>
+    ({ ...t.value.labels.contractStatuses, ...t.value.labels.claimStatuses })[
+      props.status
+    ] satisfies string,
 )
 </script>
 

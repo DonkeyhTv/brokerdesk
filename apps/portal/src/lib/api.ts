@@ -2,6 +2,7 @@ import "server-only";
 
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { getLocale } from "@/i18n/server";
 import { SESSION_COOKIE } from "./constants";
 import type { DemoAccounts } from "./types";
 
@@ -35,6 +36,8 @@ export async function apiFetch(
     cache: "no-store",
     headers: {
       Accept: "application/json",
+      // The API answers in the visitor's language: validation messages included.
+      "Accept-Language": await getLocale(),
       ...(init.body ? { "Content-Type": "application/json" } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(forwardedFor ? { "X-Forwarded-For": forwardedFor } : {}),
@@ -69,7 +72,11 @@ export async function demoAccounts(): Promise<DemoAccounts | null> {
   try {
     const response = await fetch(apiUrl("/demo/accounts"), {
       cache: "no-store",
-      headers: { Accept: "application/json" },
+      // The API names the accounts in the visitor's language.
+      headers: {
+        Accept: "application/json",
+        "Accept-Language": await getLocale(),
+      },
     });
 
     return response.ok ? ((await response.json()) as DemoAccounts) : null;

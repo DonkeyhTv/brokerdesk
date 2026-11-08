@@ -1,4 +1,4 @@
-import { STATUSES } from "@/lib/labels";
+import { getMessages } from "@/i18n/server";
 import type { ClaimStatus, ContractStatus } from "@/lib/types";
 
 const STYLES: Record<ClaimStatus | ContractStatus, string> = {
@@ -12,16 +12,18 @@ const STYLES: Record<ClaimStatus | ContractStatus, string> = {
   rejected: "bg-red-50 text-red-800 ring-red-200",
 };
 
-export function StatusBadge({
+export async function StatusBadge({
   status,
 }: {
   status: ClaimStatus | ContractStatus;
 }) {
+  const { labels } = await getMessages();
+
   return (
     <span
       className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ring-1 ring-inset ${STYLES[status]}`}
     >
-      {STATUSES[status]}
+      {labels.statuses[status]}
     </span>
   );
 }

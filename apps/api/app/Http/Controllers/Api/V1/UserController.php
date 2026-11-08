@@ -93,7 +93,7 @@ class UserController extends Controller
             || Document::query()->where('uploaded_by', $user->id)->exists();
 
         if ($isReferenced) {
-            throw new ConflictHttpException('Reassign this person\'s clients and records first.');
+            throw new ConflictHttpException(__('Reassign this person\'s clients and records first.'));
         }
 
         $user->delete();

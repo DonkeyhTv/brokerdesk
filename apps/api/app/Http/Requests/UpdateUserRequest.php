@@ -35,7 +35,7 @@ class UpdateUserRequest extends FormRequest
             'password' => ['nullable', 'string', Password::min(10)],
             'role' => ['required', Rule::in([UserRole::Admin->value, UserRole::Broker->value]), function (string $attribute, mixed $value, Closure $fail) use ($target) {
                 if ($target->id === $this->user()?->id && $value !== UserRole::Admin->value) {
-                    $fail('You cannot remove your own admin role.');
+                    $fail(__('You cannot remove your own admin role.'));
                 }
             }],
         ];

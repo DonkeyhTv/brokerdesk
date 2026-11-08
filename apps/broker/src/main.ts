@@ -5,8 +5,11 @@ import { createPinia } from 'pinia'
 
 import App from './App.vue'
 import { onUnauthenticated } from './api/http'
+import { applyToDocument } from './i18n'
 import router from './router'
 import { useAuthStore } from './stores/auth'
+
+applyToDocument()
 
 const app = createApp(App)
 

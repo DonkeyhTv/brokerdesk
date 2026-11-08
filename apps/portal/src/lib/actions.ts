@@ -2,11 +2,14 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { isLocale, LOCALE_COOKIE } from "@/i18n";
+import { getMessages } from "@/i18n/server";
 import { ApiError, apiFetch, api } from "./api";
 import { SESSION_COOKIE } from "./constants";
 import type { Claim, Resource } from "./types";
 
 const ONE_WEEK_IN_SECONDS = 60 * 60 * 24 * 7;
+const ONE_YEAR_IN_SECONDS = 60 * 60 * 24 * 365;
 
 export interface FormState {
   message?: string;
@@ -24,9 +27,10 @@ export async function login(
       password: formData.get("password"),
     }),
   }).catch(() => null);
+  const { login: t } = await getMessages();
 
   if (response === null) {
-    return { message: "Le service ne répond pas. Réessayez dans un instant." };
+    return { message: t.unavailable };
   }
 
   if (response.status === 422) {
@@ -36,18 +40,15 @@ export async function login(
   }
 
   if (response.status === 403) {
-    return {
-      message:
-        "Ce compte est un compte courtier : connectez-vous à l'espace courtier.",
-    };
+    return { message: t.brokerAccount };
   }
 
   if (response.status === 429) {
-    return { message: "Trop de tentatives. Réessayez dans une minute." };
+    return { message: t.tooManyAttempts };
   }
 
   if (!response.ok) {
-    return { message: "La connexion a échoué. Réessayez." };
+    return { message: t.failed };
   }
 
   const { token } = await response.json();
@@ -101,8 +102,21 @@ export async function declareClaim(
       throw error;
     }
 
-    return { message: "La déclaration a échoué. Réessayez." };
+    return { message: (await getMessages()).claims.failed };
   }
 
   redirect(`/claims?declared=${encodeURIComponent(reference)}`);
+}
+
+export async function setLocale(locale: string): Promise<void> {
+  if (!isLocale(locale)) {
+    return;
+  }
+
+  (await cookies()).set(LOCALE_COOKIE, locale, {
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: ONE_YEAR_IN_SECONDS,
+  });
 }

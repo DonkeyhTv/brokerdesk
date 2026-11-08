@@ -53,7 +53,7 @@ class ContractRequest extends FormRequest
         if (! $contract instanceof Contract) {
             $rules['client_id'] = ['required', 'integer', function (string $attribute, mixed $value, Closure $fail) use ($user) {
                 if (! is_numeric($value) || ! Client::query()->visibleTo($user)->whereKey($value)->exists()) {
-                    $fail('The selected client is invalid.');
+                    $fail(__('The selected client is invalid.'));
                 }
             }];
         }

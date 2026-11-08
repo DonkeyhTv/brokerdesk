@@ -3,6 +3,7 @@ import { onMounted, ref, shallowRef } from 'vue'
 import { RouterLink } from 'vue-router'
 import { api } from '@/api/http'
 import type { AppNotification, PageMeta, Paginated } from '@/api/types'
+import { t } from '@/i18n'
 import { useNotificationsStore } from '@/stores/notifications'
 import { formatDate, formatDateTime } from '@/utils/format'
 import AlertMessage from '@/components/AlertMessage.vue'
@@ -26,7 +27,7 @@ async function load(): Promise<void> {
     meta.value = response.meta
     await store.refresh()
   } catch {
-    error.value = 'Les notifications n’ont pas pu être chargées.'
+    error.value = t.value.notifications.loadFailed
   }
 }
 
@@ -51,14 +52,14 @@ onMounted(load)
 </script>
 
 <template>
-  <PageHeader title="Notifications" subtitle="Échéances de votre portefeuille">
+  <PageHeader :title="t.notifications.title" :subtitle="t.notifications.subtitle">
     <button
       type="button"
       class="btn-secondary"
       :disabled="store.unreadCount === 0"
       @click="markAllRead"
     >
-      Tout marquer comme lu
+      {{ t.notifications.markAllRead }}
     </button>
   </PageHeader>
 
@@ -66,7 +67,7 @@ onMounted(load)
 
   <div class="card overflow-hidden">
     <p v-if="notifications.length === 0" class="px-4 py-12 text-center text-sm text-slate-500">
-      Aucune notification.
+      {{ t.notifications.empty }}
     </p>
     <ul class="divide-y divide-slate-100">
       <li
@@ -77,8 +78,10 @@ onMounted(load)
       >
         <div class="min-w-0">
           <p class="text-sm text-slate-900">
-            <span v-if="notification.read_at === null" class="font-semibold">Non lue · </span>
-            Le contrat
+            <span v-if="notification.read_at === null" class="font-semibold">{{
+              t.notifications.unread
+            }}</span>
+            {{ t.notifications.before }}
             <RouterLink
               :to="{ name: 'contract', params: { id: notification.data.contract_id } }"
               class="link"
@@ -86,12 +89,21 @@ onMounted(load)
             >
               {{ notification.data.policy_number }}
             </RouterLink>
-            de {{ notification.data.client_name }} arrive à échéance le
-            {{ formatDate(notification.data.expires_on) }}.
+            {{
+              t.notifications.after(
+                notification.data.client_name,
+                formatDate(notification.data.expires_on),
+              )
+            }}
           </p>
           <p class="mt-0.5 text-xs text-slate-500">
-            Moins de {{ notification.data.threshold_days }} jours · préavis jusqu'au
-            {{ formatDate(notification.data.notice_deadline) }} ·
+            {{
+              t.notifications.details(
+                notification.data.threshold_days,
+                formatDate(notification.data.notice_deadline),
+              )
+            }}
+            ·
             {{ formatDateTime(notification.created_at) }}
           </p>
         </div>
@@ -101,7 +113,7 @@ onMounted(load)
           class="btn-secondary"
           @click="markRead(notification)"
         >
-          Marquer comme lue
+          {{ t.notifications.markRead }}
         </button>
       </li>
     </ul>

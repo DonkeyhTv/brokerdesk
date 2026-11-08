@@ -15,7 +15,7 @@ class UpdateClaim
     public function handle(Claim $claim, array $attributes): Claim
     {
         if ($claim->status->isClosed()) {
-            throw new ConflictHttpException('A closed claim can no longer be changed.');
+            throw new ConflictHttpException(__('A closed claim can no longer be changed.'));
         }
 
         $claim->fill($attributes);

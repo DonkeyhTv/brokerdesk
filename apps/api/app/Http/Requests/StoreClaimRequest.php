@@ -31,9 +31,9 @@ class StoreClaimRequest extends FormRequest
                 $contract = is_numeric($value) ? Contract::query()->visibleTo($user)->find($value) : null;
 
                 if ($contract === null) {
-                    $fail('The selected contract is invalid.');
+                    $fail(__('The selected contract is invalid.'));
                 } elseif ($contract->status !== ContractStatus::Active) {
-                    $fail('A claim can only be declared on an active contract.');
+                    $fail(__('A claim can only be declared on an active contract.'));
                 }
             }],
             'occurred_on' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],

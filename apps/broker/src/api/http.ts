@@ -1,3 +1,4 @@
+import { locale, t } from '@/i18n'
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
@@ -49,7 +50,11 @@ async function refreshCsrfCookie(): Promise<void> {
 
 async function send(url: string, method: string, body: unknown): Promise<Response> {
   const isForm = body instanceof FormData
-  const headers: Record<string, string> = { Accept: 'application/json' }
+  // The API answers in the interface's language: validation messages included.
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    'Accept-Language': locale.value,
+  }
 
   if (body !== undefined && !isForm) {
     headers['Content-Type'] = 'application/json'
@@ -96,7 +101,7 @@ export async function api<T = void>(path: string, options: RequestOptions = {}):
 
     throw new ApiError(
       response.status,
-      payload?.message ?? 'Une erreur est survenue.',
+      payload?.message ?? t.value.common.genericError,
       payload?.errors,
     )
   }

@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { declareClaim, type FormState } from "@/lib/actions";
-import { CONTRACT_TYPES } from "@/lib/labels";
+import { useI18n } from "@/i18n/client";
 import type { Contract } from "@/lib/types";
 import { FieldError } from "./FieldError";
 
@@ -16,12 +16,12 @@ export function ClaimForm({
   initialContractId: string;
 }) {
   const [state, action, isPending] = useActionState(declareClaim, initialState);
+  const { t } = useI18n();
 
   if (contracts.length === 0) {
     return (
       <p className="card mt-6 p-8 text-center text-sm text-slate-500">
-        Un sinistre se déclare sur un contrat actif, et vous n&apos;en avez
-        aucun pour le moment.
+        {t.claims.noActiveContract}
       </p>
     );
   }
@@ -42,7 +42,7 @@ export function ClaimForm({
           htmlFor="contract_id"
           className="mb-1 block text-sm font-medium text-slate-700"
         >
-          Contrat concerné
+          {t.claims.contract}
         </label>
         <select
           id="contract_id"
@@ -50,10 +50,10 @@ export function ClaimForm({
           className="input"
           defaultValue={initialContractId}
         >
-          <option value="">Choisir un contrat</option>
+          <option value="">{t.claims.chooseContract}</option>
           {contracts.map((contract) => (
             <option key={contract.id} value={contract.id}>
-              {CONTRACT_TYPES[contract.type]} – {contract.policy_number}
+              {t.labels.contractTypes[contract.type]} – {contract.policy_number}
             </option>
           ))}
         </select>
@@ -65,7 +65,7 @@ export function ClaimForm({
           htmlFor="occurred_on"
           className="mb-1 block text-sm font-medium text-slate-700"
         >
-          Date du sinistre
+          {t.claims.date}
         </label>
         <input
           id="occurred_on"
@@ -81,7 +81,7 @@ export function ClaimForm({
           htmlFor="description"
           className="mb-1 block text-sm font-medium text-slate-700"
         >
-          Que s&apos;est-il passé ?
+          {t.claims.whatHappened}
         </label>
         <textarea
           id="description"
@@ -93,7 +93,7 @@ export function ClaimForm({
       </div>
 
       <button type="submit" className="btn-primary" disabled={isPending}>
-        {isPending ? "Envoi…" : "Envoyer ma déclaration"}
+        {isPending ? t.claims.submitting : t.claims.submit}
       </button>
     </form>
   );

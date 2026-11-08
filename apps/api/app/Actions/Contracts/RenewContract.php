@@ -15,10 +15,9 @@ class RenewContract
     public function handle(Contract $contract, ?int $annualPremiumCents = null): Contract
     {
         if (! $contract->isRenewable()) {
-            throw new ConflictHttpException(sprintf(
-                'Only active or lapsed contracts renew, from %d days before they expire.',
-                Contract::RENEWAL_WINDOW_DAYS,
-            ));
+            throw new ConflictHttpException(__('Only active or lapsed contracts renew, from :days days before they expire.', [
+                'days' => Contract::RENEWAL_WINDOW_DAYS,
+            ]));
         }
 
         $contract->expires_on = $contract->expires_on->addYearNoOverflow();

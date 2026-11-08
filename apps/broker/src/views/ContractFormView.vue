@@ -13,7 +13,7 @@ import type {
   Resource,
 } from '@/api/types'
 import { centsToEuros, eurosToCents } from '@/utils/format'
-import { CONTRACT_STATUSES, CONTRACT_TYPES, PAYMENT_FREQUENCIES } from '@/utils/labels'
+import { t } from '@/i18n'
 import AlertMessage from '@/components/AlertMessage.vue'
 import FormField from '@/components/FormField.vue'
 import PageHeader from '@/components/PageHeader.vue'
@@ -62,7 +62,7 @@ onMounted(async () => {
       })
     }
   } catch {
-    message.value = 'Le formulaire n’a pas pu être chargé.'
+    message.value = t.value.common.formLoadFailed
   }
 })
 
@@ -87,7 +87,7 @@ async function submit(): Promise<void> {
   const cents = eurosToCents(form.premium)
 
   if (cents === null) {
-    errors.value = { annual_premium_cents: ['Indiquez un montant en euros, par exemple 850,00.'] }
+    errors.value = { annual_premium_cents: [t.value.contracts.premiumExample] }
     return
   }
 
@@ -116,9 +116,9 @@ async function submit(): Promise<void> {
   } catch (error) {
     if (error instanceof ApiError && error.status === 422) {
       errors.value = error.errors
-      message.value = 'Veuillez corriger les champs signalés.'
+      message.value = t.value.common.fixFields
     } else {
-      message.value = 'L’enregistrement a échoué.'
+      message.value = t.value.common.saveFailed
     }
   } finally {
     isSubmitting.value = false
@@ -127,25 +127,25 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <PageHeader :title="isEditing ? 'Modifier le contrat' : 'Nouveau contrat'" />
+  <PageHeader :title="isEditing ? t.contracts.edit : t.contracts.new" />
 
   <AlertMessage :message="message" />
 
   <form class="card max-w-3xl space-y-5 p-6" novalidate @submit.prevent="submit">
     <div class="grid gap-4 sm:grid-cols-2">
-      <FormField label="Client" name="client_id" :errors="errors">
+      <FormField :label="t.contracts.client" name="client_id" :errors="errors">
         <SearchSelect
           id="client_id"
           v-model="form.client_id"
           :search="searchClients"
           :resolve="resolveClient"
           :disabled="isEditing"
-          placeholder="Nom, e-mail ou n° d'entreprise"
+          :placeholder="t.contracts.clientSearchPlaceholder"
         />
       </FormField>
-      <FormField label="Assureur" name="insurer_id" :errors="errors">
+      <FormField :label="t.contracts.insurer" name="insurer_id" :errors="errors">
         <select id="insurer_id" v-model="form.insurer_id" class="input">
-          <option value="" disabled>Choisir un assureur</option>
+          <option value="" disabled>{{ t.contracts.chooseInsurer }}</option>
           <option v-for="insurer in insurers" :key="insurer.id" :value="insurer.id">
             {{ insurer.name }}
           </option>
@@ -154,19 +154,19 @@ async function submit(): Promise<void> {
     </div>
 
     <div class="grid gap-4 sm:grid-cols-3">
-      <FormField label="N° de police" name="policy_number" :errors="errors">
+      <FormField :label="t.contracts.policyNumber" name="policy_number" :errors="errors">
         <input id="policy_number" v-model="form.policy_number" class="input" autocomplete="off" />
       </FormField>
-      <FormField label="Branche" name="type" :errors="errors">
+      <FormField :label="t.contracts.type" name="type" :errors="errors">
         <select id="type" v-model="form.type" class="input">
-          <option v-for="(label, value) in CONTRACT_TYPES" :key="value" :value="value">
+          <option v-for="(label, value) in t.labels.contractTypes" :key="value" :value="value">
             {{ label }}
           </option>
         </select>
       </FormField>
-      <FormField label="Statut" name="status" :errors="errors">
+      <FormField :label="t.contracts.status" name="status" :errors="errors">
         <select id="status" v-model="form.status" class="input">
-          <option v-for="(label, value) in CONTRACT_STATUSES" :key="value" :value="value">
+          <option v-for="(label, value) in t.labels.contractStatuses" :key="value" :value="value">
             {{ label }}
           </option>
         </select>
@@ -174,16 +174,20 @@ async function submit(): Promise<void> {
     </div>
 
     <div class="grid gap-4 sm:grid-cols-2">
-      <FormField label="Date de début" name="starts_on" :errors="errors">
+      <FormField :label="t.contracts.startDate" name="starts_on" :errors="errors">
         <input id="starts_on" v-model="form.starts_on" class="input" type="date" />
       </FormField>
-      <FormField label="Date d'échéance" name="expires_on" :errors="errors">
+      <FormField :label="t.contracts.expiryDate" name="expires_on" :errors="errors">
         <input id="expires_on" v-model="form.expires_on" class="input" type="date" />
       </FormField>
     </div>
 
     <div class="grid gap-4 sm:grid-cols-2">
-      <FormField label="Prime annuelle (€)" name="annual_premium_cents" :errors="errors">
+      <FormField
+        :label="t.contracts.annualPremiumEuros"
+        name="annual_premium_cents"
+        :errors="errors"
+      >
         <input
           id="annual_premium_cents"
           v-model="form.premium"
@@ -192,9 +196,9 @@ async function submit(): Promise<void> {
           autocomplete="off"
         />
       </FormField>
-      <FormField label="Fractionnement" name="payment_frequency" :errors="errors">
+      <FormField :label="t.contracts.paymentFrequency" name="payment_frequency" :errors="errors">
         <select id="payment_frequency" v-model="form.payment_frequency" class="input">
-          <option v-for="(label, value) in PAYMENT_FREQUENCIES" :key="value" :value="value">
+          <option v-for="(label, value) in t.labels.paymentFrequencies" :key="value" :value="value">
             {{ label }}
           </option>
         </select>
@@ -203,13 +207,13 @@ async function submit(): Promise<void> {
 
     <div class="flex gap-2 pt-2">
       <button type="submit" class="btn-primary" :disabled="isSubmitting">
-        {{ isSubmitting ? 'Enregistrement…' : 'Enregistrer' }}
+        {{ isSubmitting ? t.common.saving : t.common.save }}
       </button>
       <RouterLink
         :to="id ? { name: 'contract', params: { id } } : { name: 'contracts' }"
         class="btn-secondary"
       >
-        Annuler
+        {{ t.common.cancel }}
       </RouterLink>
     </div>
   </form>

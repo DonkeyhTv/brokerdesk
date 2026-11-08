@@ -256,3 +256,25 @@ test('a broker renews a contract that expires soon, with an indexed premium', as
   await expect(page.getByText(/999,90/)).toBeVisible()
   await expect(page.getByRole('button', { name: 'Renouveler' })).toHaveCount(0)
 })
+
+test('the back office speaks Dutch, down to the API validation messages', async ({ page }) => {
+  await page.goto('/login')
+  await page.getByRole('group', { name: 'Langue' }).getByRole('button', { name: 'nl' }).click()
+  await expect(page.getByRole('heading', { name: 'Makelaarsomgeving' })).toBeVisible()
+  await expect(page.locator('html')).toHaveAttribute('lang', 'nl')
+
+  await page.getByRole('button', { name: 'Makelaar', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
+  await expect(page.getByText('Binnen 30 dagen')).toBeVisible()
+
+  await page.getByRole('link', { name: 'Klanten', exact: true }).click()
+  await page.getByRole('link', { name: 'Nieuwe klant' }).click()
+  await page.getByLabel('E-mail').fill('geen-adres')
+  await page.getByRole('button', { name: 'Opslaan' }).click()
+  await expect(page.locator('#email-error')).toHaveText(
+    'Het veld e-mailadres moet een geldig e-mailadres zijn.',
+  )
+
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Nieuwe klant' })).toBeVisible()
+})

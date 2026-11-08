@@ -11,16 +11,18 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 /**
  * @property UserRole $role
+ * @property string|null $locale
  */
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements HasLocalePreference
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
@@ -51,6 +53,14 @@ class User extends Authenticatable
     public function clientProfile(): HasOne
     {
         return $this->hasOne(Client::class);
+    }
+
+    /**
+     * Mails go out in the language of the interface the person last used, French until then.
+     */
+    public function preferredLocale(): string
+    {
+        return $this->locale ?? 'fr';
     }
 
     public function isStaff(): bool

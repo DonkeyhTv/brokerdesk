@@ -15,9 +15,12 @@ class DemoAccountController extends Controller
     {
         abort_unless((bool) config('demo.enabled'), Response::HTTP_NOT_FOUND);
 
+        /** @var list<array{label: string, app: string, email: string}> $accounts */
+        $accounts = config('demo.accounts');
+
         return response()->json([
             'password' => config('demo.password'),
-            'accounts' => config('demo.accounts'),
+            'accounts' => array_map(fn (array $account) => [...$account, 'label' => __($account['label'])], $accounts),
         ]);
     }
 }

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t } from '@/i18n'
 import { STACK, type StackLayerId } from '@/utils/stack'
 
 defineProps<{
@@ -20,13 +21,13 @@ defineProps<{
         class="font-semibold text-slate-900"
         :class="compact ? 'w-full text-xs sm:w-32 sm:shrink-0' : 'text-sm'"
       >
-        {{ layer.name }}
+        {{ t.about.layers[layer.id].name }}
         <span
           v-if="layer.id === current"
           class="rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap text-brand-700"
           :class="compact ? 'mt-0.5 block w-fit' : 'ml-1'"
         >
-          vous êtes ici
+          {{ t.about.youAreHere }}
         </span>
       </dt>
       <dd class="flex flex-wrap gap-1" :class="compact ? 'sm:flex-1' : 'mt-2'">
@@ -38,7 +39,9 @@ defineProps<{
           {{ tool }}
         </span>
       </dd>
-      <dd v-if="!compact" class="mt-3 text-sm text-slate-600">{{ layer.role }}</dd>
+      <dd v-if="!compact" class="mt-3 text-sm text-slate-600">
+        {{ t.about.layers[layer.id].role }}
+      </dd>
     </div>
   </dl>
 </template>

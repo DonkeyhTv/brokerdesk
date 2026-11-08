@@ -4,7 +4,7 @@ import { api, ApiError } from '@/api/http'
 import type { User } from '@/api/types'
 import { useAuthStore } from '@/stores/auth'
 import { useList } from '@/composables/useList'
-import { USER_ROLES } from '@/utils/labels'
+import { t } from '@/i18n'
 import AlertMessage from '@/components/AlertMessage.vue'
 import FormField from '@/components/FormField.vue'
 import PageHeader from '@/components/PageHeader.vue'
@@ -58,7 +58,7 @@ async function submit(): Promise<void> {
     if (error instanceof ApiError && error.status === 422) {
       errors.value = error.errors
     } else {
-      message.value = 'L’enregistrement a échoué.'
+      message.value = t.value.common.saveFailed
     }
   } finally {
     isSubmitting.value = false
@@ -66,7 +66,7 @@ async function submit(): Promise<void> {
 }
 
 async function remove(user: User): Promise<void> {
-  if (!window.confirm(`Retirer ${user.name} de l'équipe ?`)) {
+  if (!window.confirm(t.value.users.confirmRemove(user.name))) {
     return
   }
 
@@ -78,39 +78,35 @@ async function remove(user: User): Promise<void> {
   } catch (error) {
     message.value =
       error instanceof ApiError && error.status === 409
-        ? `${user.name} a encore des clients ou des dossiers : réassignez-les d'abord.`
-        : 'La suppression a échoué.'
+        ? t.value.users.stillReferenced(user.name)
+        : t.value.common.deleteFailed
   }
 }
 </script>
 
 <template>
-  <PageHeader title="Équipe" :subtitle="auth.user?.brokerage.name">
-    <button type="button" class="btn-primary" @click="openNew">Ajouter un membre</button>
+  <PageHeader :title="t.users.title" :subtitle="auth.user?.brokerage.name">
+    <button type="button" class="btn-primary" @click="openNew">{{ t.users.add }}</button>
   </PageHeader>
 
   <AlertMessage :message="message ?? list.error.value" />
 
   <form v-if="isFormOpen" class="card mb-6 space-y-4 p-6" novalidate @submit.prevent="submit">
     <h2 class="text-base font-semibold text-slate-900">
-      {{ editing ? `Modifier ${editing.name}` : 'Nouveau membre' }}
+      {{ editing ? t.users.editMember(editing.name) : t.users.newMember }}
     </h2>
     <div class="grid gap-4 sm:grid-cols-2">
-      <FormField label="Nom" name="name" :errors="errors">
+      <FormField :label="t.users.name" name="name" :errors="errors">
         <input id="name" v-model="form.name" class="input" autocomplete="off" />
       </FormField>
-      <FormField label="E-mail" name="email" :errors="errors">
+      <FormField :label="t.users.email" name="email" :errors="errors">
         <input id="email" v-model="form.email" class="input" type="email" autocomplete="off" />
       </FormField>
       <FormField
-        label="Mot de passe"
+        :label="t.users.password"
         name="password"
         :errors="errors"
-        :hint="
-          editing
-            ? 'Laisser vide pour le conserver. 10 caractères minimum.'
-            : '10 caractères minimum.'
-        "
+        :hint="editing ? t.users.passwordKeepHint : t.users.passwordHint"
       >
         <input
           id="password"
@@ -120,16 +116,20 @@ async function remove(user: User): Promise<void> {
           autocomplete="new-password"
         />
       </FormField>
-      <FormField label="Rôle" name="role" :errors="errors">
+      <FormField :label="t.users.role" name="role" :errors="errors">
         <select id="role" v-model="form.role" class="input">
-          <option value="broker">{{ USER_ROLES.broker }}</option>
-          <option value="admin">{{ USER_ROLES.admin }}</option>
+          <option value="broker">{{ t.labels.userRoles.broker }}</option>
+          <option value="admin">{{ t.labels.userRoles.admin }}</option>
         </select>
       </FormField>
     </div>
     <div class="flex gap-2">
-      <button type="submit" class="btn-primary" :disabled="isSubmitting">Enregistrer</button>
-      <button type="button" class="btn-secondary" @click="isFormOpen = false">Annuler</button>
+      <button type="submit" class="btn-primary" :disabled="isSubmitting">
+        {{ t.common.save }}
+      </button>
+      <button type="button" class="btn-secondary" @click="isFormOpen = false">
+        {{ t.common.cancel }}
+      </button>
     </div>
   </form>
 
@@ -138,10 +138,12 @@ async function remove(user: User): Promise<void> {
       <table class="min-w-full divide-y divide-slate-200">
         <thead class="bg-slate-50">
           <tr>
-            <th scope="col" class="table-head">Nom</th>
-            <th scope="col" class="table-head">E-mail</th>
-            <th scope="col" class="table-head">Rôle</th>
-            <th scope="col" class="table-head"><span class="sr-only">Actions</span></th>
+            <th scope="col" class="table-head">{{ t.users.name }}</th>
+            <th scope="col" class="table-head">{{ t.users.email }}</th>
+            <th scope="col" class="table-head">{{ t.users.role }}</th>
+            <th scope="col" class="table-head">
+              <span class="sr-only">{{ t.users.actions }}</span>
+            </th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
@@ -153,24 +155,26 @@ async function remove(user: User): Promise<void> {
           <tr v-for="user in list.rows.value" :key="user.id" class="hover:bg-slate-50">
             <td class="table-cell font-medium text-slate-900">{{ user.name }}</td>
             <td class="table-cell">{{ user.email }}</td>
-            <td class="table-cell">{{ USER_ROLES[user.role] }}</td>
+            <td class="table-cell">{{ t.labels.userRoles[user.role] }}</td>
             <td class="table-cell text-right whitespace-nowrap">
               <span
                 v-if="user.is_demo_account"
                 class="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700"
-                title="Partagé par tous les visiteurs de la démo : il ne peut être ni modifié ni retiré."
+                :title="t.users.demoAccountTitle"
               >
-                Compte de démo
+                {{ t.users.demoAccount }}
               </span>
               <template v-else>
-                <button type="button" class="link mr-3" @click="openEdit(user)">Modifier</button>
+                <button type="button" class="link mr-3" @click="openEdit(user)">
+                  {{ t.common.edit }}
+                </button>
                 <button
                   v-if="user.id !== auth.user?.id"
                   type="button"
                   class="font-medium text-red-700 hover:underline"
                   @click="remove(user)"
                 >
-                  Retirer
+                  {{ t.users.remove }}
                 </button>
               </template>
             </td>
