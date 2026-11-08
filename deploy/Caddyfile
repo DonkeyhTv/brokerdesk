@@ -1,0 +1,43 @@
+{
+	servers {
+		# Proxies allowed to report the visitor through X-Forwarded-* headers. Nobody by default,
+		# private_ranges when another proxy on this server stands in front (compose.behind-proxy.yaml).
+		trusted_proxies static {$CADDY_TRUSTED_PROXIES:127.0.0.1/32}
+	}
+}
+
+(common) {
+	encode zstd gzip
+	header Strict-Transport-Security "max-age=31536000"
+	log
+}
+
+# The back office and the API share this origin, so that Sanctum session cookies work without CORS.
+{$SITE_SCHEME:https}://{$BROKER_DOMAIN} {
+	import common
+
+	@api path /api/* /sanctum/* /docs/api /docs/api.json /up
+	handle @api {
+		reverse_proxy web:80
+	}
+
+	handle {
+		root * /srv/broker
+		header {
+			X-Content-Type-Options nosniff
+			X-Frame-Options DENY
+			Referrer-Policy strict-origin-when-cross-origin
+		}
+		# File names under /assets change with their content, index.html does not.
+		header /assets/* Cache-Control "public, max-age=31536000, immutable"
+		@pages not path /assets/*
+		header @pages Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+{$SITE_SCHEME:https}://{$PORTAL_DOMAIN} {
+	import common
+	reverse_proxy portal:3000
+}

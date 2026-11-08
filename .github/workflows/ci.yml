@@ -101,3 +101,32 @@ jobs:
       - name: Show logs on failure
         if: failure()
         run: docker compose logs --tail 50
+
+  production:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: deploy
+    steps:
+      - uses: actions/checkout@v4
+      # *.localhost names make Caddy use its own certificate authority instead of Let's Encrypt.
+      - name: Configure the stack for this machine
+        run: |
+          cat > .env <<ENV
+          BROKER_DOMAIN=broker.localhost
+          PORTAL_DOMAIN=portal.localhost
+          APP_KEY=base64:$(openssl rand -base64 32)
+          DB_PASSWORD=$(openssl rand -hex 24)
+          DEMO_MODE=true
+          ENV
+      - run: docker compose up -d --build
+      - name: Check both sites over HTTPS
+        run: |
+          get() { curl -fsk --connect-to "::127.0.0.1:443" "$@"; }
+          timeout 300 sh -c "until curl -fsk --connect-to ::127.0.0.1:443 https://broker.localhost/api/v1/health; do sleep 5; done"
+          get https://broker.localhost/contracts | grep -q '<div id="app">'
+          get https://broker.localhost/docs/api.json | grep -q '"openapi"'
+          get https://portal.localhost/login | grep -q 'Client société'
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --tail 50

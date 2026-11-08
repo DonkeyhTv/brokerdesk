@@ -11,7 +11,20 @@ A mini-SaaS for Belgian insurance brokers: they manage clients, contracts, renew
 | ![Broker dashboard with renewal windows and premium volume](docs/screenshots/back-office-dashboard.png) | ![Client portal listing the contracts of a company](docs/screenshots/portal-contracts.png) |
 | ![Contract list with filters and CSV export](docs/screenshots/back-office-contracts.png) | ![Contract page with shared documents and claims](docs/screenshots/portal-contract.png) |
 
-## Try it
+## Try it online
+
+No installation needed. The login pages offer these accounts in one click:
+
+| Account | Application | Email | Password |
+| --- | --- | --- | --- |
+| Brokerage admin | [Back office](https://brokerdesk.steve-amissi.be) | `admin@example.be` | `password` |
+| Broker | [Back office](https://brokerdesk.steve-amissi.be) | `broker@example.be` | `password` |
+| Individual client | [Client portal](https://portail.brokerdesk.steve-amissi.be) | `client@example.be` | `password` |
+| Company client | [Client portal](https://portail.brokerdesk.steve-amissi.be) | `company@example.be` | `password` |
+
+The admin sees the whole brokerage, the broker only their own portfolio, and each client only their own contracts. Feel free to create, edit or delete anything: all data is reset every night. The [API documentation](https://brokerdesk.steve-amissi.be/docs/api) is public too.
+
+## Run it locally
 
 Docker is the only requirement:
 
@@ -21,16 +34,7 @@ cd brokerdesk
 docker compose up
 ```
 
-The first start installs dependencies and takes a few minutes. Then open the application of your choice. The login pages offer these accounts in one click.
-
-| Account | Application | Email | Password |
-| --- | --- | --- | --- |
-| Brokerage admin | [Back office](http://localhost:5173) | `admin@example.be` | `password` |
-| Broker | [Back office](http://localhost:5173) | `broker@example.be` | `password` |
-| Individual client | [Client portal](http://localhost:3000) | `client@example.be` | `password` |
-| Company client | [Client portal](http://localhost:3000) | `company@example.be` | `password` |
-
-Also available: the [API documentation](http://localhost:8000/docs/api) and the mail catcher, [Mailpit](http://localhost:8025), which shows the expiry alerts.
+The first start installs dependencies and takes a few minutes. Then open the [back office](http://localhost:5173) or the [client portal](http://localhost:3000), with the same accounts as above. Also available: the [API documentation](http://localhost:8000/docs/api) and the mail catcher, [Mailpit](http://localhost:8025), which shows the expiry alerts.
 
 All data is fictional, except for real Belgian communes and postal codes. The interface is in French, because its users are Belgian. Code and documentation are in English.
 
@@ -164,17 +168,37 @@ docker compose exec portal npm test                # Vitest
 docker compose --profile e2e run --rm e2e          # Playwright, across the whole stack
 ```
 
-GitHub Actions runs linting, static analysis, dependency audits, tests and builds on every push, then boots the stack from a clean checkout and runs the browser tests against it.
+GitHub Actions runs linting, static analysis, dependency audits, tests and builds on every push, then boots the stack from a clean checkout and runs the browser tests against it. It also builds and boots the production stack, and checks both sites over HTTPS.
 
 ## Demo mode
 
 `DEMO_MODE=true` is the local default. It lists the demo accounts on the login pages and erases **all data** every night at 03:00, so people can try anything. Never enable it on real data.
 
+## Deploy
+
+[`deploy/`](deploy) runs the production stack on any server with Docker. Its images contain the built code and only the production dependencies, instead of development servers on mounted folders:
+
+- **Caddy** is the only public entry point. It obtains HTTPS certificates from Let's Encrypt, serves the built back office, and passes `/api` and `/sanctum` to the API on the same host name, so session cookies need no CORS.
+- **The API** runs php-fpm with OPcache and cached configuration behind nginx, plus a queue worker and the scheduler. Uploaded documents live in a volume.
+- **The portal** runs the standalone Next.js server and reaches the API over the internal network.
+- **Mailpit** catches the expiry alerts, because the demo addresses are fictional. It has no public address.
+
+Point two DNS names at the server, then:
+
+```sh
+cd deploy
+cp .env.example .env    # host names, APP_KEY and a database password
+docker compose up -d --build
+```
+
+The first start migrates the database and, in demo mode, loads the demo data. To update the server, pull and run the last command again.
+
+If the server already runs a web server on ports 80 and 443, such as nginx with certbot, uncomment `COMPOSE_FILE` in `.env`. Caddy then listens in plain HTTP on `127.0.0.1:8090` only, and the existing web server handles HTTPS and forwards both host names to it, as in [`nginx-host.conf.example`](deploy/nginx-host.conf.example).
+
 ## What I'd do next
 
-- **Production images and a hosted demo.** Docker Compose currently runs the front ends' development servers, which is right for trying the project but not for hosting it.
 - **Portal invitations and password reset.** Only the seeded clients have a portal account today.
 - **Dutch.** Belgian brokers need both languages, and the interface would need translation files first.
-- **A content security policy,** and forwarding the real visitor address from Next.js to the API, so that login limits apply per visitor behind a trusted proxy.
+- **A content security policy,** and forwarding the visitor's address from Next.js to the API. The back office already reaches the API with the real address, but portal logins share the address of the portal server.
 - **A searchable client field in forms,** which currently list the first 100 clients.
 - **Renewing a contract in one action,** rather than editing its dates.

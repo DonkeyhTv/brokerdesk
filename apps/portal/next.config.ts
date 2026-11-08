@@ -3,6 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   devIndicators: false,
   poweredByHeader: false,
+  // A self-contained server for the production image, without the whole node_modules.
+  output: "standalone",
   async headers() {
     return [
       {

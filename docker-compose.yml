@@ -1,5 +1,7 @@
 x-api: &api
-  build: ./apps/api
+  build:
+    context: ./apps/api
+    target: dev
   # Same user everywhere, including "docker compose exec", so that files stay readable by php-fpm.
   user: www-data
   environment:

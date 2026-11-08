@@ -1,0 +1,18 @@
+# nginx on the host, in front of compose.behind-proxy.yaml. Replace both host names and the port if needed,
+# then obtain the certificates with: certbot --nginx -d <back office host> -d <portal host>
+server {
+    listen 80;
+    server_name app.brokerdesk.example portal.brokerdesk.example;
+
+    client_max_body_size 20m;
+
+    location / {
+        proxy_pass http://127.0.0.1:8090;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        # Replaced, not appended: a visitor cannot slip in an address of their choice.
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+    }
+}
