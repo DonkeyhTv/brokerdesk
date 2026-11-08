@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import "./globals.css";
 
 const description =
@@ -20,7 +21,10 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // Rendered for each request, so that every page carries the nonce of its content security policy.
+  await connection();
+
   return (
     <html lang="fr" className="h-full">
       <body className="flex min-h-full flex-col">{children}</body>

@@ -14,7 +14,10 @@ const redirect = vi.hoisted(() =>
 
 vi.mock("server-only", () => ({}));
 vi.mock("next/navigation", () => ({ redirect }));
-vi.mock("next/headers", () => ({ cookies: async () => store }));
+vi.mock("next/headers", () => ({
+  cookies: async () => store,
+  headers: async () => new Headers(),
+}));
 
 function form(fields: Record<string, string>): FormData {
   const data = new FormData();

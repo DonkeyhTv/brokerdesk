@@ -1,6 +1,6 @@
 import "server-only";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { SESSION_COOKIE } from "./constants";
 import type { DemoAccounts } from "./types";
@@ -26,6 +26,9 @@ export async function apiFetch(
   init: RequestInit = {},
 ): Promise<Response> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  // Passed on, so that the API's login limits count each visitor, not this server.
+  // The proxy in front of the portal sets it, and the API only trusts it from private addresses.
+  const forwardedFor = (await headers()).get("x-forwarded-for");
 
   return fetch(apiUrl(path), {
     ...init,
@@ -34,6 +37,7 @@ export async function apiFetch(
       Accept: "application/json",
       ...(init.body ? { "Content-Type": "application/json" } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(forwardedFor ? { "X-Forwarded-For": forwardedFor } : {}),
       ...init.headers,
     },
   });

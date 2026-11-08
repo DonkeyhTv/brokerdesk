@@ -2,6 +2,21 @@ import { expect, test } from '@playwright/test'
 
 const PORTAL = 'http://localhost:3000'
 
+// The portal sends a strict content security policy: any script or style it blocks fails the test.
+test.beforeEach(({ page }, testInfo) => {
+  page.on('console', (message) => {
+    if (/Content Security Policy/i.test(message.text())) {
+      testInfo.annotations.push({ type: 'csp-violation', description: message.text() })
+    }
+  })
+})
+
+test.afterEach(({}, testInfo) => {
+  expect(testInfo.annotations.filter((annotation) => annotation.type === 'csp-violation')).toEqual(
+    [],
+  )
+})
+
 async function signIn(page: import('@playwright/test').Page, account: string) {
   await page.goto(`${PORTAL}/login`)
   await page.getByRole('button', { name: account, exact: true }).click()
@@ -25,6 +40,7 @@ test('the public pages are made to be found', async ({ page, request }) => {
   expect(headers['x-frame-options']).toBe('DENY')
   expect(headers['x-content-type-options']).toBe('nosniff')
   expect(headers['x-powered-by']).toBeUndefined()
+  expect(headers['content-security-policy']).toMatch(/script-src 'self' 'nonce-/)
 
   const robots = await (await request.get(`${PORTAL}/robots.txt`)).text()
   expect(robots).toContain('Disallow: /contracts')

@@ -2,6 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api, ApiError, apiFetch, demoAccounts } from "./api";
 
 const token = vi.hoisted(() => ({ value: "secret" as string | undefined }));
+const forwardedFor = vi.hoisted(() => ({
+  value: undefined as string | undefined,
+}));
 const redirect = vi.hoisted(() =>
   vi.fn((url: string) => {
     throw new Error(`REDIRECT ${url}`);
@@ -14,6 +17,10 @@ vi.mock("next/headers", () => ({
   cookies: async () => ({
     get: () => (token.value ? { value: token.value } : undefined),
   }),
+  headers: async () =>
+    new Headers(
+      forwardedFor.value ? { "x-forwarded-for": forwardedFor.value } : {},
+    ),
 }));
 
 describe("api", () => {
@@ -21,6 +28,7 @@ describe("api", () => {
 
   beforeEach(() => {
     token.value = "secret";
+    forwardedFor.value = undefined;
     fetchMock.mockReset();
     redirect.mockClear();
     vi.stubGlobal("fetch", fetchMock);
@@ -43,6 +51,17 @@ describe("api", () => {
     expect(init?.headers).toMatchObject({
       Authorization: "Bearer secret",
       Accept: "application/json",
+    });
+  });
+
+  it("passes on the visitor's address, so that login limits count each visitor", async () => {
+    forwardedFor.value = "203.0.113.7, 172.18.0.1";
+    fetchMock.mockResolvedValue(new Response("{}"));
+
+    await apiFetch("/auth/tokens", { method: "POST", body: "{}" });
+
+    expect(fetchMock.mock.calls[0]![1]?.headers).toMatchObject({
+      "X-Forwarded-For": "203.0.113.7, 172.18.0.1",
     });
   });
 

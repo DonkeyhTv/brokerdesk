@@ -63,6 +63,7 @@ All data is fictional, except for real Belgian communes and postal codes. The in
 - **Tenant isolation is enforced twice.** Queries and policies filter by brokerage, and composite foreign keys such as `(client_id, brokerage_id)` make a cross-brokerage reference impossible even if the code has a bug. See [the contracts migration](apps/api/database/migrations/2026_11_05_100200_create_contracts_table.php).
 - **Two authentication flows, for two kinds of client.** The Vue app uses Sanctum cookie sessions with CSRF. The Next.js server holds a Sanctum token in an `httpOnly` cookie and calls the API itself, so scripts in the browser never see it.
 - **Records a user may not see answer 404, not 403,** so their existence stays hidden. See [the policies](apps/api/app/Policies).
+- **A strict content security policy.** The back office build has no inline code, so it runs only files from its own origin. The portal gives each page view a fresh nonce, and the browser tests fail on any violation. See [the portal proxy](apps/portal/src/proxy.ts).
 - **Money is stored in integer cents, and Belgian enterprise numbers are value objects** validated with their mod 97 check digits. See [`EnterpriseNumber`](apps/api/app/Support/EnterpriseNumber.php).
 - **N+1 queries fail the tests,** because lazy loading is prevented outside production.
 
@@ -199,4 +200,3 @@ If the server already runs a web server on ports 80 and 443, such as nginx with 
 
 - **Portal invitations and password reset.** Only the seeded clients have a portal account today.
 - **Dutch.** Belgian brokers need both languages, and the interface would need translation files first.
-- **A content security policy,** and forwarding the visitor's address from Next.js to the API. The back office already reaches the API with the real address, but portal logins share the address of the portal server.

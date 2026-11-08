@@ -127,6 +127,8 @@ jobs:
           get https://broker.localhost/contracts | grep -q '<div id="app">'
           get https://broker.localhost/docs/api.json | grep -q '"openapi"'
           get https://portal.localhost/login | grep -q 'Client société'
+          get -I https://broker.localhost/ | grep -qi "content-security-policy: default-src 'self'"
+          get -I https://portal.localhost/login | grep -qi "content-security-policy: .*'nonce-"
       - name: Show logs on failure
         if: failure()
         run: docker compose logs --tail 50
