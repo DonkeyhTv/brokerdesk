@@ -25,7 +25,9 @@ export function TechStack({
           >
             {layer.name}
             {layer.id === current && (
-              <span className="ml-1 rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-medium text-brand-700">
+              <span
+                className={`rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap text-brand-700 ${compact ? "mt-0.5 block w-fit" : "ml-1"}`}
+              >
                 vous êtes ici
               </span>
             )}

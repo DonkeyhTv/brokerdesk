@@ -23,7 +23,8 @@ defineProps<{
         {{ layer.name }}
         <span
           v-if="layer.id === current"
-          class="ml-1 rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-medium text-brand-700"
+          class="rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap text-brand-700"
+          :class="compact ? 'mt-0.5 block w-fit' : 'ml-1'"
         >
           vous êtes ici
         </span>
