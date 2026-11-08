@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref, shallowRef } from 'vue'
+import { reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { api, ApiError } from '@/api/http'
 import type { Claim, Contract, Paginated, Resource } from '@/api/types'
@@ -8,6 +8,7 @@ import { CONTRACT_TYPES } from '@/utils/labels'
 import AlertMessage from '@/components/AlertMessage.vue'
 import FormField from '@/components/FormField.vue'
 import PageHeader from '@/components/PageHeader.vue'
+import SearchSelect, { type SearchOption } from '@/components/SearchSelect.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,22 +21,28 @@ const form = reactive({
   estimate: '',
 })
 
-const contracts = shallowRef<Contract[]>([])
 const errors = ref<Record<string, string[]>>({})
 const message = ref<string | null>(null)
 const isSubmitting = ref(false)
 
-onMounted(async () => {
-  try {
-    contracts.value = (
-      await api<Paginated<Contract>>('/contracts', {
-        query: { 'filter[status]': 'active', per_page: 100 },
-      })
-    ).data
-  } catch {
-    message.value = 'Le formulaire n’a pas pu être chargé.'
+function contractOption(contract: Contract): SearchOption {
+  return {
+    id: contract.id,
+    label: `${contract.client?.name} – ${CONTRACT_TYPES[contract.type]} – ${contract.policy_number}`,
   }
-})
+}
+
+async function searchContracts(term: string): Promise<SearchOption[]> {
+  const { data } = await api<Paginated<Contract>>('/contracts', {
+    query: { 'filter[status]': 'active', 'filter[search]': term || undefined, per_page: 10 },
+  })
+
+  return data.map(contractOption)
+}
+
+async function resolveContract(id: number): Promise<SearchOption> {
+  return contractOption((await api<Resource<Contract>>(`/contracts/${id}`)).data)
+}
 
 async function submit(): Promise<void> {
   errors.value = {}
@@ -82,13 +89,13 @@ async function submit(): Promise<void> {
 
   <form class="card max-w-2xl space-y-5 p-6" novalidate @submit.prevent="submit">
     <FormField label="Contrat" name="contract_id" :errors="errors">
-      <select id="contract_id" v-model="form.contract_id" class="input">
-        <option value="" disabled>Choisir un contrat actif</option>
-        <option v-for="contract in contracts" :key="contract.id" :value="contract.id">
-          {{ contract.client?.name }} – {{ CONTRACT_TYPES[contract.type] }} –
-          {{ contract.policy_number }}
-        </option>
-      </select>
+      <SearchSelect
+        id="contract_id"
+        v-model="form.contract_id"
+        :search="searchContracts"
+        :resolve="resolveContract"
+        placeholder="N° de police ou nom du client"
+      />
     </FormField>
 
     <div class="grid gap-4 sm:grid-cols-2">

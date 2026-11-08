@@ -17,6 +17,7 @@ import { CONTRACT_STATUSES, CONTRACT_TYPES, PAYMENT_FREQUENCIES } from '@/utils/
 import AlertMessage from '@/components/AlertMessage.vue'
 import FormField from '@/components/FormField.vue'
 import PageHeader from '@/components/PageHeader.vue'
+import SearchSelect, { type SearchOption } from '@/components/SearchSelect.vue'
 
 const props = defineProps<{ id?: string }>()
 const route = useRoute()
@@ -35,7 +36,6 @@ const form = reactive({
   payment_frequency: 'annual' as PaymentFrequency,
 })
 
-const clients = shallowRef<Client[]>([])
 const insurers = shallowRef<NamedRef[]>([])
 const errors = ref<Record<string, string[]>>({})
 const message = ref<string | null>(null)
@@ -44,13 +44,7 @@ const isEditing = computed(() => props.id !== undefined)
 
 onMounted(async () => {
   try {
-    const [insurersResponse, clientsResponse] = await Promise.all([
-      api<{ data: NamedRef[] }>('/insurers'),
-      api<Paginated<Client>>('/clients', { query: { per_page: 100 } }),
-    ])
-
-    insurers.value = insurersResponse.data
-    clients.value = clientsResponse.data
+    insurers.value = (await api<{ data: NamedRef[] }>('/insurers')).data
 
     if (props.id) {
       const { data } = await api<Resource<Contract>>(`/contracts/${props.id}`)
@@ -71,6 +65,20 @@ onMounted(async () => {
     message.value = 'Le formulaire n’a pas pu être chargé.'
   }
 })
+
+async function searchClients(term: string): Promise<SearchOption[]> {
+  const { data } = await api<Paginated<Client>>('/clients', {
+    query: { 'filter[search]': term || undefined, sort: 'name', per_page: 10 },
+  })
+
+  return data.map((client) => ({ id: client.id, label: client.name }))
+}
+
+async function resolveClient(id: number): Promise<SearchOption> {
+  const { data } = await api<Resource<Client>>(`/clients/${id}`)
+
+  return { id: data.id, label: data.name }
+}
 
 async function submit(): Promise<void> {
   errors.value = {}
@@ -126,12 +134,14 @@ async function submit(): Promise<void> {
   <form class="card max-w-3xl space-y-5 p-6" novalidate @submit.prevent="submit">
     <div class="grid gap-4 sm:grid-cols-2">
       <FormField label="Client" name="client_id" :errors="errors">
-        <select id="client_id" v-model="form.client_id" class="input" :disabled="isEditing">
-          <option value="" disabled>Choisir un client</option>
-          <option v-for="client in clients" :key="client.id" :value="client.id">
-            {{ client.name }}
-          </option>
-        </select>
+        <SearchSelect
+          id="client_id"
+          v-model="form.client_id"
+          :search="searchClients"
+          :resolve="resolveClient"
+          :disabled="isEditing"
+          placeholder="Nom, e-mail ou n° d'entreprise"
+        />
       </FormField>
       <FormField label="Assureur" name="insurer_id" :errors="errors">
         <select id="insurer_id" v-model="form.insurer_id" class="input">

@@ -63,6 +63,7 @@ test('a broker works on a client, a contract, a document and a claim', async ({ 
 
   await test.step('add a contract to the client', async () => {
     await page.getByRole('link', { name: 'Nouveau contrat' }).click()
+    await expect(page.getByRole('combobox', { name: 'Client' })).toHaveValue(`Émilie ${lastName}`)
     await page.getByLabel('Assureur').selectOption({ label: 'Brabant Vie' })
     await page.getByLabel('N° de police').fill(policyNumber)
     await page.getByLabel('Date de début').fill('2026-01-01')
@@ -104,6 +105,9 @@ test('a broker works on a client, a contract, a document and a claim', async ({ 
 
   await test.step('declare a claim, settle it, and see it frozen', async () => {
     await page.getByRole('link', { name: 'Déclarer un sinistre' }).click()
+    await expect(page.getByRole('combobox', { name: 'Contrat' })).toHaveValue(
+      new RegExp(policyNumber),
+    )
     await page.getByLabel('Description').fill('Pare-chocs abîmé sur un parking.')
     await page.getByRole('button', { name: 'Déclarer' }).click()
 
@@ -116,6 +120,16 @@ test('a broker works on a client, a contract, a document and a claim', async ({ 
     await page.getByLabel('Montant réglé').fill('420')
     await page.getByRole('button', { name: 'Enregistrer' }).click()
     await expect(page.getByText('il ne peut plus être modifié')).toBeVisible()
+  })
+
+  await test.step('find any client from the contract form, ignoring accents', async () => {
+    await page.getByRole('link', { name: 'Contrats', exact: true }).click()
+    await page.getByRole('link', { name: 'Nouveau contrat' }).click()
+    const client = page.getByRole('combobox', { name: 'Client' })
+    await client.fill(`lefevre${suffix}`)
+    await page.getByRole('option', { name: `Émilie ${lastName}` }).click()
+    await expect(client).toHaveValue(`Émilie ${lastName}`)
+    await page.getByRole('link', { name: 'Annuler' }).click()
   })
 
   await test.step('export the filtered contracts as CSV', async () => {
