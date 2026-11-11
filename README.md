@@ -4,12 +4,15 @@ A mini-SaaS for Belgian insurance brokers: they manage clients, contracts, renew
 
 [![CI](https://github.com/DonkeyhTv/brokerdesk/actions/workflows/ci.yml/badge.svg)](https://github.com/DonkeyhTv/brokerdesk/actions/workflows/ci.yml)
 
+**Live demo, one-click accounts, no sign-up:** [back office](https://brokerdesk.steve-amissi.be) · [client portal](https://portail.brokerdesk.steve-amissi.be) · [API documentation](https://brokerdesk.steve-amissi.be/docs/api)
+
 ![A tour of the broker back office and the client portal](docs/demo.gif)
 
-| Broker dashboard | Client portal |
+| Back office | Client portal |
 | --- | --- |
-| ![Broker dashboard with renewal windows and premium volume](docs/screenshots/back-office-dashboard.png) | ![Client portal listing the contracts of a company](docs/screenshots/portal-contracts.png) |
-| ![Contract list with filters and CSV export](docs/screenshots/back-office-contracts.png) | ![Contract page with shared documents and claims](docs/screenshots/portal-contract.png) |
+| ![Brokerage dashboard with renewal windows and premiums by line of business](docs/screenshots/showcase/01-dashboard.jpg) | ![Client portal listing the contracts of a company](docs/screenshots/showcase/06-portal-contracts.jpg) |
+| ![Contract page with the one-click renewal form open](docs/screenshots/showcase/03-contract-renewal.jpg) | ![Contract page in the portal, with a shared document and a claim](docs/screenshots/showcase/07-portal-contract.jpg) |
+| ![The broker dashboard in Dutch](docs/screenshots/showcase/08-dashboard-nl.jpg) | ![The "How it's built" page, listing the stack inside the app](docs/screenshots/showcase/05-stack.jpg) |
 
 ## Try it online
 
@@ -48,6 +51,7 @@ All data is fictional, except for real Belgian communes and postal codes. The in
 - **Portal access:** brokers invite a client from their page, the client chooses a password from the link and lands in the portal, and forgotten passwords reset by mail. In demo mode, the invitation link also shows on screen, since demo mails stay on the server.
 - **Traceability:** an activity log records who changed what and when, and contracts export to CSV.
 - **French and Dutch:** both interfaces follow the browser's language until people choose, the API answers in it, validation messages included, and expiry alerts reach each broker in the language they last used.
+- **The stack, shown in the app:** both login pages and a "How it's built" page list the technologies and the main technical choices, with links to the code and the API documentation.
 
 ## Stack and why
 
